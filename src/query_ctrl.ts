@@ -1,0 +1,378 @@
+import appEvents from 'grafana/app/core/app_events';
+import {QueryCtrl} from 'grafana/app/plugins/sdk';
+import _ from 'lodash';
+
+import ApiEndpoint from './model/ApiEndpoint';
+import AggregationType from './model/AggregationType';
+import TextValue from './model/TextValue';
+
+import FieldSelector from './FieldSelector';
+import {AGGREGATION_TYPES, API_ENDPOINTS, QUERY_TYPES} from './constants';
+import {targetToQueryString} from './utils/query_util';
+
+export class SensuQueryCtrl extends QueryCtrl {
+  static templateUrl = 'partials/query.editor.html';
+
+  // Constants
+  readonly aggregationTypes: AggregationType[] = AGGREGATION_TYPES;
+  readonly queryTypes: TextValue[] = QUERY_TYPES;
+
+  segmentAggregationTarget: any;
+  dataPreview: any;
+
+  apiEndpoints: ApiEndpoint[] = API_ENDPOINTS;
+  addFieldSegment: any;
+  filterSegments: any[];
+  namespaceSegment: any;
+
+  /** @ngInject **/
+  constructor($scope, $injector, private $q, public uiSegmentSrv, private templateSrv) {
+    super($scope, $injector);
+
+    if (this.target.version === undefined) {
+      this.target.version = 1;
+    }
+
+    if (this.target.filterSegments === undefined) {
+      this.target.filterSegments = [[this.uiSegmentSrv.newPlusButton()]];
+    } else {
+      this.target.filterSegments = _(this.target.filterSegments)
+        .filter(segments => segments.length === 3)
+        .filter(segments => !_.get(segments[2], 'fake', false))
+        .map(segments => this._restoreFilterSegment(segments))
+        .value();
+      this.target.filterSegments.push([this.uiSegmentSrv.newPlusButton()]);
+    }
+
+    if (this.target.fieldSelectors === undefined) {
+      this.target.fieldSelectors = [new FieldSelector(this, '*')];
+    } else {
+      this.target.fieldSelectors = _.map(this.target.fieldSelectors, selector =>
+        FieldSelector.restore(this, selector)
+      );
+    }
+
+    if (this.target.apiEndpoints === undefined) {
+      this.target.apiEndpoints = API_ENDPOINTS[0].value;
+    }
+
+    if (this.target.queryType === undefined) {
+      this.target.queryType = this.queryTypes[0].value;
+    }
+
+    this.addFieldSegment = this.uiSegmentSrv.newPlusButton();
+
+    if (this.target.aggregation !== undefined) {
+      delete this.target.aggregation;
+    }
+
+    if (this.target.aggregationType === undefined) {
+      this.target.aggregationType = AGGREGATION_TYPES[0].value;
+    }
+
+    if (this.target.aggregationRequiresTarget === undefined) {
+      this.target.aggregationRequiresTarget = AGGREGATION_TYPES[0].requiresTarget;
+    }
+
+    if (this.target.aggregationField === undefined) {
+      this.segmentAggregationTarget = this.uiSegmentSrv.newFake(
+        'select target attribute',
+        'value',
+        'query-segment-value'
+      );
+    } else {
+      this.segmentAggregationTarget = this.uiSegmentSrv.newSegment({
+        value: this.target.aggregationField,
+      });
+    }
+
+    if (this.target.namespace === undefined) {
+      this.target.namespace = 'default';
+    }
+
+    this.namespaceSegment = this.uiSegmentSrv.newSegment({value: this.target.namespace});
+
+    appEvents.on('ds-request-response', this.onResponseReceived, $scope);
+    this.panelCtrl.events.on('refresh', this.onRefresh, $scope);
+    this.panelCtrl.events.on('data-received', this.onDataReceived, $scope);
+
+    this.panelCtrl.refresh();
+  }
+
+  /**
+   * Returns the currently selected aggregation type.
+   */
+  getCurrentAggregationType = () => {
+    return <AggregationType>_.find(AGGREGATION_TYPES, {
+      value: this.target.aggregationType,
+    });
+  };
+
+  /**
+   * Called if the aggregation field changes.
+   */
+  onAggregationFieldChange = () => {
+    this.target.aggregationField = this.segmentAggregationTarget.value;
+    this.panelCtrl.refresh();
+  };
+
+  /**
+   * Called if the aggregation type changes.
+   */
+  onAggregationTypeChange = () => {
+    console.log('aggregation', this.target.aggregationType);
+    this.target.aggregationRequiresTarget = this.getCurrentAggregationType().requiresTarget;
+    this._resetAggregation();
+    this.panelCtrl.refresh();
+  };
+
+  /**
+   * Resets the aggregation options.
+   */
+  _resetAggregation = () => {
+    delete this.target.aggregationAlias;
+    delete this.target.aggregationField;
+
+    this.segmentAggregationTarget = this.uiSegmentSrv.newFake(
+      'select target attribute',
+      'value',
+      'query-segment-value'
+    );
+  };
+
+  /**
+   * Returns selectable options for the aggregation field segment.
+   */
+  getTargetOptions = () => {
+    const options: string[] = this.getAllDeepKeys();
+    const segments: any[] = _.map(options, option =>
+      this.uiSegmentSrv.newSegment({value: option})
+    );
+
+    return this.$q.when(segments);
+  };
+
+  /**
+   * Returns selectable options for the namespace segment.
+   */
+  getNamespaceOptions = () => {
+    // only default for now
+    const segments: any[] = _.map(['default'], option =>
+      this.uiSegmentSrv.newSegment({value: option})
+    );
+
+    return this.$q.when(segments);
+  };
+
+  /**
+   * Called of the namespace is changing.
+   */
+  onNamespaceChange = () => {
+    this.target.namespace = this.namespaceSegment.value;
+    this.panelCtrl.refresh();
+  };
+
+  /**
+   * Resets the field and filter segments.
+   */
+  _reset = () => {
+    this.target.fieldSelectors = [new FieldSelector(this, '*')];
+    this.target.filterSegments = [[this.uiSegmentSrv.newPlusButton()]];
+  };
+
+  /**
+   * Called if the api is changing.
+   */
+  onApiChange = () => {
+    this._reset();
+    this.panelCtrl.refresh();
+  };
+
+  /**
+   * Removes the filter at the given index.
+   */
+  removeFilter = index => {
+    this.target.filterSegments.splice(index, 1);
+    this.panelCtrl.refresh();
+  };
+
+  /**
+   * Called when a filter is changing.
+   */
+  onFilterSegmentUpdate = (segment, parentIndex, index) => {
+    if (segment.type === 'plus-button') {
+      this._addFilterSegment(segment);
+    }
+
+    if (index == 2) {
+      const segmentValue = segment.value;
+      if (/\/.*\/\w*/.test(segmentValue)) {
+        this.target.filterSegments[parentIndex][1] = this.uiSegmentSrv.newOperator('=~');
+      }
+    }
+
+    this.panelCtrl.refresh();
+  };
+
+  /**
+   * Restores filter segments of a saved confgiuration.
+   */
+  _restoreFilterSegment = (segmentData: any[]) => {
+    let segmentArray = [
+      this.uiSegmentSrv.newKey(segmentData[0].value),
+      this.uiSegmentSrv.newOperator(segmentData[1].value),
+      this.uiSegmentSrv.newKeyValue(segmentData[2].value),
+    ];
+
+    return segmentArray;
+  };
+
+  /**
+   * Adds a new filter.
+   */
+  _addFilterSegment = (sourceSegment: any) => {
+    this.target.filterSegments.pop();
+
+    let segmentArray = [
+      this.uiSegmentSrv.newKey(sourceSegment.value),
+      this.uiSegmentSrv.newOperator('='),
+      this.uiSegmentSrv.newFake('select filter value', 'value', 'query-segment-value'),
+    ];
+
+    this.target.filterSegments.push(segmentArray);
+    this.target.filterSegments.push([this.uiSegmentSrv.newPlusButton()]);
+  };
+
+  /**
+   * Returns selectable options for filter segments.
+   */
+  getFilterSegmentOptions = (segment, parentIndex, index) => {
+    let segments: any[] = [];
+
+    if (segment.type === 'operator') {
+      segments = this.uiSegmentSrv.newOperators(['=', '=~', '!=', '!~', '<', '>']);
+    } else if (this.dataPreview && this.dataPreview.length > 0) {
+      let options: string[] = [];
+      if (index === 0) {
+        options = this.getAllDeepKeys();
+      } else if (index === 2) {
+        let filterKey = this.target.filterSegments[parentIndex][0].value;
+        options = _(this.dataPreview)
+          .map(data => _.get(data, filterKey))
+          .uniq()
+          .value();
+
+        _.each(this.templateSrv.variables, variable =>
+          options.unshift('/$' + variable.name + '/')
+        );
+      }
+      segments = _.map(options, option => this.uiSegmentSrv.newSegment(String(option)));
+    }
+
+    return this.$q.when(segments);
+  };
+
+  /**
+   * Returns all existing keys of the current data preview.
+   */
+  getAllDeepKeys = () => {
+    return _.flatMap(this.combineKeys(this.dataPreview[0]), e => e);
+  };
+
+  /**
+   * Returns selectable options for the field segments.
+   */
+  getFieldSelectorOptions = (segment, parentIndex, index) => {
+    let segments: any[] = [];
+
+    if (this.dataPreview && this.dataPreview.length > 0) {
+      let options: string[] = [];
+
+      let currentSelection: any = this.dataPreview[0];
+
+      if (index > 0) {
+        for (let i = 0; i < index; i++) {
+          let fieldSegment = this.target.fieldSelectors[parentIndex].fieldSegments[i];
+          currentSelection = _.get(currentSelection, fieldSegment.value);
+        }
+      }
+
+      options = _.concat(options, ['*']);
+      options = _.concat(options, Object.keys(currentSelection));
+
+      options.sort();
+
+      segments = _.map(options, option => this.uiSegmentSrv.newSegment({value: option}));
+    }
+
+    return this.$q.when(segments);
+  };
+
+  /**
+   * Called if a field segment is changed.
+   */
+  onFieldSelectorSegmentUpdate = (segment, parentIndex, index) => {
+    if (segment == this.addFieldSegment) {
+      this.target.fieldSelectors.push(new FieldSelector(this, segment.value));
+      this.addFieldSegment = this.uiSegmentSrv.newPlusButton();
+    } else {
+      this.target.fieldSelectors[parentIndex].refresh(this);
+    }
+
+    this.panelCtrl.refresh();
+  };
+
+  /**
+   * Removes the field selector on the specified index.
+   */
+  removeField = index => {
+    this.target.fieldSelectors.splice(index, 1);
+    this.panelCtrl.refresh();
+  };
+
+  /**
+   * Called if an alias is changing.
+   */
+  onAliasChange = parentIndex => {
+    this.panelCtrl.refresh();
+  };
+
+  combineKeys = object => {
+    let keys: string[] = Object.keys(object);
+
+    return _.flatMap(keys, key => {
+      if (_.isPlainObject(object[key])) {
+        return _.map(this.combineKeys(object[key]), nestedKeys => {
+          return key + '.' + nestedKeys;
+        });
+      } else {
+        return key;
+      }
+    });
+  };
+
+  onDataReceived = dataList => {
+    //TODO
+  };
+
+  /**
+   * Called when a request is finished. The requests data is stored and used as a data preview which is basis for auto completions.
+   */
+  onResponseReceived = response => {
+    if (!response.config.url.endsWith('/auth')) {
+      this.dataPreview = response.data;
+    }
+  };
+
+  onRefresh = () => {
+    //TODO
+    this.dataPreview = '';
+  };
+
+  /**
+   * Returns a string representation of the current query configuration.
+   */
+  getCollapsedText() {
+    return targetToQueryString(this.target);
+  }
+}

@@ -1,0 +1,119 @@
+<query-editor-row query-ctrl="ctrl" can-collapse="true">
+
+  <!-- API SELECTION -->
+  <div class="gf-form-inline">
+    <div class="gf-form">
+      <label class="gf-form-label query-keyword width-8">SENSU GO API</label>
+      <div class="gf-form-select-wrapper">
+        <select class="gf-form-input gf-size-auto" ng-model="ctrl.target.apiEndpoints" ng-options="f.value as f.text for f in ctrl.apiEndpoints"
+          ng-change="ctrl.onApiChange()"></select>
+      </div>
+
+      <label class="gf-form-label query-keyword width-8">NAMESPACE</label>
+      <metric-segment segment="ctrl.namespaceSegment" get-options="ctrl.getNamespaceOptions()" on-change="ctrl.onNamespaceChange()"></metric-segment>
+
+      <label class="gf-form-label query-keyword width-8">QUERY TYPE</label>
+      <div class="gf-form-select-wrapper">
+        <select class="gf-form-input gf-size-auto" ng-model="ctrl.target.queryType" ng-options="f.value as f.text for f in ctrl.queryTypes"
+          ng-change="ctrl.onApiChange()"></select>
+      </div>
+    </div>
+    <div class="gf-form gf-form--grow">
+      <div class="gf-form-label gf-form-label--grow"></div>
+    </div>
+  </div>
+
+  <!-- FILTER SEGMENTS -->
+  <div class="gf-form-inline" ng-repeat="segmentArray in ctrl.target.filterSegments">
+    <div class="gf-form">
+      <label class="gf-form-label query-keyword width-8">{{$first ? 'FILTER' : ''}}</label>
+
+      <metric-segment ng-repeat="segment in segmentArray" segment="segment" get-options="ctrl.getFilterSegmentOptions(segment, $parent.$index, $index)"
+        on-change="ctrl.onFilterSegmentUpdate(segment, $parent.$index, $index)"></metric-segment>
+
+      <a ng-show="!$last" class="gf-form-label tight-form-func" ng-click="ctrl.removeFilter($index)"><i class="fa fa-trash"></i></a>
+    </div>
+    <div class="gf-form gf-form--grow">
+      <div class="gf-form-label gf-form-label--grow"></div>
+    </div>
+  </div>
+
+  <!-- FIELD SELECTION -->
+  <div ng-show="ctrl.target.queryType == 'field'">
+    <div class="gf-form-inline" ng-repeat="fieldSelector in ctrl.target.fieldSelectors">
+      <label class="gf-form-label query-keyword width-8">{{$first ? 'FIELDS' : ''}}</label>
+
+      <div class="gf-form" ng-repeat="segment in fieldSelector.fieldSegments">
+        <label ng-show="!$first" class="gf-form-label width-1">.</label>
+        <metric-segment segment="segment" get-options="ctrl.getFieldSelectorOptions(segment, $parent.$index, $index)"
+          on-change="ctrl.onFieldSelectorSegmentUpdate(segment, $parent.$index, $index)"></metric-segment>
+      </div>
+
+      <div class="gf-form">
+        <label class="gf-form-label query-keyword width-3">AS</label>
+        <input type="text" placeholder="alias" class="gf-form-input width-6" ng-model="ctrl.target.fieldSelectors[$index].alias"
+          ng-change="ctrl.onAliasChange($index)" ng-model-options="{updateOn: 'blur'}">
+      </div>
+
+      <a ng-show="ctrl.target.fieldSelectors.length > 1" class="gf-form-label tight-form-func" ng-click="ctrl.removeField($index)"><i
+          class="fa fa-trash"></i></a>
+
+      <div class="gf-form gf-form--grow">
+        <div class="gf-form-label gf-form-label--grow"></div>
+      </div>
+    </div>
+
+    <div class="gf-form-inline">
+      <label class="gf-form-label query-keyword width-8"></label>
+
+      <metric-segment ng-repeat="segment in [ctrl.addFieldSegment]" segment="segment" get-options="ctrl.getFieldSelectorOptions(segment, 0, -1)"
+        on-change="ctrl.onFieldSelectorSegmentUpdate(segment, 0, -1)"></metric-segment>
+
+      <div class="gf-form gf-form--grow">
+        <div class="gf-form-label gf-form-label--grow"></div>
+      </div>
+    </div>
+
+    <div class="gf-form-inline">
+      <label class="gf-form-label query-keyword width-8">LIMIT</label>
+
+      <input type="text" placeholder="100" class="gf-form-input width-8" ng-model="ctrl.target.limit" ng-change="ctrl.refresh()" ng-model-options="{updateOn: 'blur'}">
+
+      <div class="gf-form gf-form--grow">
+        <div class="gf-form-label gf-form-label--grow"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGGREGATION -->
+  <div ng-show="ctrl.target.queryType == 'aggregation'">
+    <div class="gf-form-inline">
+      <label class="gf-form-label query-keyword width-8">AGGREGATION</label>
+
+      <div class="gf-form-select-wrapper">
+        <select class="gf-form-input gf-size-auto" ng-model="ctrl.target.aggregationType" ng-options="f.value as f.text for f in ctrl.aggregationTypes"
+          ng-change="ctrl.onAggregationTypeChange()"></select>
+      </div>
+
+      <div class="gf-form" ng-show="ctrl.target.aggregationRequiresTarget">
+        <label class="gf-form-label query-keyword width-3">ON</label>
+
+        <metric-segment ng-repeat="segment in [ctrl.segmentAggregationTarget]" segment="segment" get-options="ctrl.getTargetOptions()"
+          on-change="ctrl.onAggregationFieldChange()"></metric-segment>
+
+      </gf-form-dropdown>
+      </div>
+
+      <div class="gf-form">
+        <label class="gf-form-label query-keyword width-3">AS</label>
+        <input type="text" placeholder="alias" class="gf-form-input width-6" ng-model="ctrl.target.aggregationAlias"
+          ng-change="ctrl.refresh()" ng-model-options="{updateOn: 'blur'}">
+      </div>
+
+      <div class="gf-form gf-form--grow">
+        <div class="gf-form-label gf-form-label--grow"></div>
+      </div>
+    </div>
+  </div>
+
+</query-editor-row>

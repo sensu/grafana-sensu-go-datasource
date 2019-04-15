@@ -1,0 +1,25 @@
+{
+  "type": "datasource",
+  "name": "Sensu Go",
+  "id": "novatec-sensugo-datasource",
+  "defaultMatchFormat": "regex values",
+  "metrics": true,
+  "annotations": false,
+  "alerting": false,
+  "info": {
+    "description": "Sensu Go Data Source for Grafana",
+    "author": {
+      "name": "Novatec Consulting GmbH",
+      "url": "https://www.novatec-gmbh.de"
+    },
+    "logos": {
+      "small": "img/sensu_logo.png",
+      "large": "img/sensu_logo.png"
+    },
+    "version": "%VERSION%",
+    "updated": "%TODAY%"
+  },
+  "dependencies": {
+    "grafanaVersion": "5.3.x"
+  }
+}
