@@ -77,7 +77,8 @@
     <div class="gf-form-inline">
       <label class="gf-form-label query-keyword width-8">LIMIT</label>
 
-      <input type="text" placeholder="100" class="gf-form-input width-8" ng-model="ctrl.target.limit" ng-change="ctrl.refresh()" ng-model-options="{updateOn: 'blur'}">
+      <input type="text" placeholder="100" class="gf-form-input width-8" ng-model="ctrl.target.limit" ng-change="ctrl.refresh()"
+        ng-model-options="{updateOn: 'blur'}">
 
       <div class="gf-form gf-form--grow">
         <div class="gf-form-label gf-form-label--grow"></div>
@@ -101,7 +102,7 @@
         <metric-segment ng-repeat="segment in [ctrl.segmentAggregationTarget]" segment="segment" get-options="ctrl.getTargetOptions()"
           on-change="ctrl.onAggregationFieldChange()"></metric-segment>
 
-      </gf-form-dropdown>
+        </gf-form-dropdown>
       </div>
 
       <div class="gf-form">
@@ -113,6 +114,20 @@
       <div class="gf-form gf-form--grow">
         <div class="gf-form-label gf-form-label--grow"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- FORMAT -->
+  <div class="gf-form-inline">
+    <label class="gf-form-label query-keyword width-8">FORMAT AS</label>
+
+    <div class="gf-form-select-wrapper">
+      <select class="gf-form-input gf-size-auto" ng-model="ctrl.target.format" ng-options="f.value as f.text for f in ctrl.formats"
+        ng-change="ctrl.refresh()"></select>
+    </div>
+
+    <div class="gf-form gf-form--grow">
+      <div class="gf-form-label gf-form-label--grow"></div>
     </div>
   </div>
 

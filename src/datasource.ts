@@ -121,19 +121,33 @@ export default class SensuDatasource {
     });
 
     return Promise.all(queries).then((queryResults: any) => {
-      const dataMatrix: DataPoint[][] = _.flatten(queryResults);
-
+      // return only values - e.g. for variables
       if (onlyValues) {
-        const tableResult = this._transformToTable(dataMatrix);
-        return _(tableResult.data)
-          .flatMap(data => data.rows)
+        return _(queryResults)
+          .map(result => this._transformToTable(result))
+          .map(result => result.rows)
+          .flatten()
           .flatten()
           .map(value => {
             return {text: value};
           })
           .value();
       } else {
-        return this._transformToTable(dataMatrix);
+        const resultDataList: any[] = _.flatMap(queryResults, (queryResult, index) => {
+          const {target: {format}} = queryTargets[index];
+
+          if (format === 'series') {
+            // return time series format
+            return this._transformToSeries(queryResult);
+          } else {
+            // return table format
+            return this._transformToTable(queryResult);
+          }
+        });
+
+        return {
+          data: resultDataList,
+        };
       }
     });
   }
@@ -205,9 +219,30 @@ export default class SensuDatasource {
   };
 
   /**
+   * Transforms the given data into a time series representation.
+   */
+  _transformToSeries = (dataMatrix: DataPoint[]) => {
+    const now: number = Date.now();
+
+    // maps the data to a series - skips all values which are not finite
+    // - name => series name
+    // - value => value
+    return _(dataMatrix)
+      .flatten()
+      .filter(data => _.isFinite(data.value))
+      .map(data => {
+        return {
+          target: data.name,
+          datapoints: [[data.value, now]],
+        };
+      })
+      .value();
+  };
+
+  /**
    * Transforms the given data into a table representation.
    */
-  _transformToTable = (dataMatrix: DataPoint[][]) => {
+  _transformToTable = (dataMatrix: DataPoint[]) => {
     // extract existing columns
     let columns: any[] = _(dataMatrix)
       .flatten()
@@ -243,13 +278,9 @@ export default class SensuDatasource {
 
     // create grafana result object
     return {
-      data: [
-        {
-          columns: columns,
-          rows: rows,
-          type: 'table',
-        },
-      ],
+      columns: columns,
+      rows: rows,
+      type: 'table',
     };
   };
 

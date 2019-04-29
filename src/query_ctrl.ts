@@ -7,7 +7,7 @@ import AggregationType from './model/AggregationType';
 import TextValue from './model/TextValue';
 
 import FieldSelector from './FieldSelector';
-import {AGGREGATION_TYPES, API_ENDPOINTS, QUERY_TYPES} from './constants';
+import {AGGREGATION_TYPES, API_ENDPOINTS, QUERY_TYPES, FORMATS} from './constants';
 import {targetToQueryString} from './utils/query_util';
 
 export class SensuQueryCtrl extends QueryCtrl {
@@ -16,6 +16,7 @@ export class SensuQueryCtrl extends QueryCtrl {
   // Constants
   readonly aggregationTypes: AggregationType[] = AGGREGATION_TYPES;
   readonly queryTypes: TextValue[] = QUERY_TYPES;
+  readonly formats: TextValue[] = FORMATS;
 
   segmentAggregationTarget: any;
   dataPreview: any;
@@ -58,6 +59,10 @@ export class SensuQueryCtrl extends QueryCtrl {
 
     if (this.target.queryType === undefined) {
       this.target.queryType = this.queryTypes[0].value;
+    }
+
+    if (this.target.format === undefined) {
+      this.target.format = this.formats[0].value;
     }
 
     this.addFieldSegment = this.uiSegmentSrv.newPlusButton();

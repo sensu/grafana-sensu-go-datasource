@@ -14,31 +14,26 @@ In addition, you have to enable `Basic Auth`. In the appearing _Basic Auth Detai
 
 The use of the datasource should be mostly self-explanatory. A short description of the available fields is following:
 
-SENSU GO API
-: The Sensu GO API which your query is targeting.
+**SENSU GO API**: The Sensu GO API which your query is targeting.
 
-NAMESPACE
-: The namespace which should be used to retrieve data.
+**NAMESPACE**: The namespace which should be used to retrieve data.
 
-QUERY TYPE
-: The type of the query. You can choose `Field Selection` or `Aggregation`.
+**QUERY TYPE**: The type of the query. You can choose `Field Selection` or `Aggregation`.
 If you choose `Field Selection` you can specify one or multiple attributes which should be selected/extracted of each object which is returned by the Sensu backend. This option is good for tables, e.g. to list all availalbe entity hostnames.
 If you choose `Aggregation` you can specify an aggregation function which is used to aggregate the data which is returned by the Sensu backend. This option is good for Singlestats, e.g. you can count how many checks exist whose status is not `0`.
 
-FILTER
-: Filters can be specified to filter the data returned by the Sensu backend.
+**FILTER**: Filters can be specified to filter the data returned by the Sensu backend.
 
-FIELDS
-: This option is only available in the `Field Selection` query type.
+**FIELDS**: This option is only available in the `Field Selection` query type.
 Here, you can specify which fields of the data should be returned by the datasource.
 
-LIMIT
-: This option is only available in the `Field Selection` query type.
+**LIMIT**: This option is only available in the `Field Selection` query type.
 Using this option you can limit the size of the resulting data set. By default, the limit is set to `100`. If you don't want to use any limit, you can disable the limit by setting the limit to `0`.
 
-AGGREGATION
-: This option is only available in the `Aggregation` query type.
+**AGGREGATION**: This option is only available in the `Aggregation` query type.
 Using this option, you can specify how the data returned by the Sensu backend should be aggregated. E.g. `count` will just give you the number of objects in the data set.
+
+**FORMAT**: The data format to return. _Time Series_ is only suitable for aggregated values and supports numeric values only!
 
 ### Using the Datasource for Template Variables
 

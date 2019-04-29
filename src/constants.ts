@@ -47,3 +47,17 @@ export const QUERY_TYPES = <TextValue[]>[
     text: 'Aggregation',
   },
 ];
+
+/**
+ * Supported result data formats.
+ */
+export const FORMATS = <TextValue[]>[
+  {
+    value: 'table',
+    text: 'Table',
+  },
+  {
+    value: 'series',
+    text: 'Time Series',
+  },
+];
