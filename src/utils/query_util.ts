@@ -7,8 +7,8 @@ import QueryComponents from '../model/QueryComponents';
  */
 const DEFAULT_LIMIT: number = 100;
 
-const QUERY_FULL_REG_EXP = /QUERY API (entity|events) IN NAMESPACE (\S+) SELECT (\S+)( WHERE (\S+(=|!=|>|<|=~|!=)\S+( AND \S+(=|!=|>|<|=~|!=)\S+)*))?/;
-const QUERY_SINGLE_FILTER_REG_EXP = /(\S+)(=~?|!=|>|<|!~)(\S+)/g;
+const QUERY_FULL_REG_EXP = /QUERY\s+API\s+(entity|events|namespaces)\s+(IN\s+NAMESPACE\s+(\S+)\s+)?SELECT\s+(\S+)(\s+WHERE\s+(\S+\s*(=~?|!=|>|<|!=)\s*\S+(\s+AND\s+\S+\s*(=~?|!=|>|<|!=)\s*\S+)*))?/;
+const QUERY_SINGLE_FILTER_REG_EXP = /(\S+)\s*(=~?|!=|>|<|!~)\s*(\S+)/g;
 
 /**
  * Creates a query string based on the target definition.
@@ -68,7 +68,11 @@ const _queryTypeAggregation = (target: any) => {
  * E.g.:  IN NAMESPACE default
  */
 const _namespace = (target: any) => {
-  return ' IN NAMESPACE ' + target.namespace;
+  if (target.namespace === 'default') {
+    return '';
+  } else {
+    return ' IN NAMESPACE ' + target.namespace;
+  }
 };
 
 /**
@@ -114,16 +118,23 @@ export const extractQueryComponents = (query: string) => {
     return null;
   }
 
+  let namespace: string;
+  if (matchResult[3] !== undefined) {
+    namespace = matchResult[3];
+  } else {
+    namespace = 'default';
+  }
+
   const components: QueryComponents = {
     apiKey: matchResult[1],
-    namespace: matchResult[2],
-    selectedField: matchResult[3],
+    namespace: namespace,
+    selectedField: matchResult[4],
     filters: [],
   };
 
-  if (matchResult[5] !== undefined) {
+  if (matchResult[6] !== undefined) {
     const filters = Array.from(
-      (<any>matchResult[5]).matchAll(QUERY_SINGLE_FILTER_REG_EXP)
+      (<any>matchResult[6]).matchAll(QUERY_SINGLE_FILTER_REG_EXP)
     );
 
     if (filters !== null) {
@@ -140,4 +151,4 @@ export const extractQueryComponents = (query: string) => {
   return components;
 };
 
-export default {targetToQueryString, extractQueryComponents};
+export default { targetToQueryString, extractQueryComponents };

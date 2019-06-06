@@ -31,7 +31,12 @@ export default class Sensu {
       delete datasource.instanceSettings.tokens;
     }
 
-    let fullUrl: string = Sensu.apiBaseUrl + '/namespaces/' + namespace + url;
+    let fullUrl: string;
+    if (url === '/namespaces') {
+      fullUrl = Sensu.apiBaseUrl + '/namespaces';
+    } else {
+      fullUrl = Sensu.apiBaseUrl + '/namespaces/' + namespace + url;
+    }
 
     let queryLimitString: string;
     if (limit) {
