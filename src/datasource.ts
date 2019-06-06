@@ -33,10 +33,19 @@ export default class SensuDatasource {
     const preparedTarget: PreparedTarget = <PreparedTarget>{
       apiUrl: apiUrl,
       filters: filters,
-      target: target,
+      target: _.cloneDeep(target), //ensure modifications are not globally propagated
     };
 
+    this._resolveTemplateVariables(preparedTarget, options);
+
     return preparedTarget;
+  };
+
+  /**
+   * Resolves template variables in the given prepared target.
+   */
+  _resolveTemplateVariables = (pTarget: PreparedTarget, options) => {
+    pTarget.target.namespace = this.templateSrv.replace(pTarget.target.namespace);
   };
 
   /**

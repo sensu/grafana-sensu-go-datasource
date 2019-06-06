@@ -43,17 +43,23 @@ You can see a string representation of a query when collapsing the query editor.
 
 A query string is structured as follows:
 
-    QUERY API (entity|events) IN NAMESPACE (namespace) SELECT (field-key) [WHERE (field-key)(=|!=|=~|!~|<|>)(field-value) [AND (field-key)(=|!=|=~|!~|<|>)(field-value)]]
+    QUERY API (entity|events|namespaces) [IN NAMESPACE (namespace)] SELECT (field-key) [WHERE (field-key)(=|!=|=~|!~|<|>)(field-value) [AND (field-key)(=|!=|=~|!~|<|>)(field-value)]]
 
-**Example**: the following query returns all hostnames which contains the string `novatec` in the `default` namespace:
+> Note: currently the query's keywords have to be in upper-case!
 
-    QUERY API entity IN NAMESPACE default SELECT system.hostname WHERE system.hostname=~/novatec/
+**Example**: the following query returns all hostnames which contains the string `novatec` in the `default` namespace (the namespace `default` will be used when `IN NAMESPACE` is not specified):
 
-**Example**: the following query returns all hostnames whose status check is larger than `0`:
+    QUERY API entity SELECT system.hostname WHERE system.hostname=~/novatec/
 
-    QUERY API events IN NAMESPACE default SELECT entity.system.hostname WHERE check.status>0
+**Example**: the following query returns all hostnames in namespace `foo` whose status check is larger than `0`:
 
-_Note: currently the query is case sensitive and requires to use a single whitespaces between its segments!_
+    QUERY API events IN NAMESPACE foo SELECT entity.system.hostname WHERE check.status>0
+
+**Example**: the following query returns all namespaces whose name starts with `f`:
+    
+    QUERY API namespaces SELECT name WHERE name=~/^f/
+
+> Note: `IN NAMESPACE` will be ignored when querying the namespaces API!
 
 ## Developing and Building the Datasource
 

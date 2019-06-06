@@ -31,7 +31,11 @@ export const API_ENDPOINTS = <ApiEndpoint[]>[
     text: 'Events API',
     value: 'events',
     url: '/events',
-  },
+  }, {
+    text: 'Namespaces API',
+    value: 'namespaces',
+    url: '/namespaces',
+  }
 ];
 
 /**
