@@ -1,7 +1,7 @@
 {
   "type": "datasource",
   "name": "Sensu Go",
-  "id": "novatec-sensugo-datasource",
+  "id": "sensu-sensugo-datasource",
   "defaultMatchFormat": "regex values",
   "metrics": true,
   "annotations": false,

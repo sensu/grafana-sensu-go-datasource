@@ -1,5 +1,5 @@
 {
-  "name": "novatec-sensugo-datasource",
+  "name": "sensu-sensugo-datasource",
   "version": "1.0.0",
   "description": "Sensu Go Data Source for Grafana",
   "private": true,
