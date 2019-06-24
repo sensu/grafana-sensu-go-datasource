@@ -7,6 +7,6 @@
   },
   "scripts": {
     "afterBump":
-      "npm run build; cp -r dist novatec-sensugo-datasource; mkdir -p releases; zip -r releases/novatec-sensugo-datasource-${version}.zip novatec-sensugo-datasource; rm -r novatec-sensugo-datasource"
+      "npm run build; cp -r dist sensu-sensugo-datasource; mkdir -p releases; zip -r releases/sensu-sensugo-datasource-${version}.zip sensu-sensugo-datasource; rm -r sensu-sensugo-datasource"
   }
 }
