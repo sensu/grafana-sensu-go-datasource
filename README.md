@@ -1,92 +1,156 @@
-# Sensu Go Datasource for Grafana
+<p>
+  <a href="https://www.sensu.io/">
+    <img alt="Sensu hearts Grafana"
+      src="/images/sensu-heart-grafana.png"
+      width="300"
+    />
+  </a>
+</p>
 
-## Using the Sensu Go Datasource
+## Sensu Go Data Source for Grafana
 
-### Configuring the Datasource
+[Setup](#setup) | [Using the Sensu Go Data Source](#using-the-sensu-go-data-source) | [Contributing](#contributing) | [Code of conduct](https://sensu.io/conduct)
 
-Adding a new Sensu Go Datasource is quite easy.
+<p>
+  <a href="https://github.com/sensu/grafana-sensu-go-datasource/blob/master/LICENSE">
+    <img src="https://img.shields.io/github/license/sensu/web.svg?style=flat" />
+  </a>
+</p>
 
-All you have to do is to set the `HTTP URL` to match your Sensu Go API server. For example, if your API is available at `http://127.0.0.1:8080/api/core/v2/` you just have to enter: `http://localhost:8080`
+Sensu Go Data Source is a [Grafana plugin][1] that allows Grafana to connect to the Sensu API.
+You can use the Sensu Go Data Source to customize your monitoring dashboards with information about Sensu entities and events.
 
-In addition, you have to enable `Basic Auth`. In the appearing _Basic Auth Details_ form you have to enter the credentials of your Sensu backend.
+## Setup
 
-### Using the Datasource
+### 1. Identify release
 
-The use of the datasource should be mostly self-explanatory. A short description of the available fields is following:
+Grab the URL for [the latest release zip file][2].
 
-**SENSU GO API**: The Sensu GO API which your query is targeting.
+### 2. Add to Grafana
 
-**NAMESPACE**: The namespace which should be used to retrieve data.
+1. Use [`grafana-cli`][3] to install the plugin by providing the plugin zip URL as the value of the `--pluginUrl` flag:
 
-**QUERY TYPE**: The type of the query. You can choose `Field Selection` or `Aggregation`.
-If you choose `Field Selection` you can specify one or multiple attributes which should be selected/extracted of each object which is returned by the Sensu backend. This option is good for tables, e.g. to list all availalbe entity hostnames.
-If you choose `Aggregation` you can specify an aggregation function which is used to aggregate the data which is returned by the Sensu backend. This option is good for Singlestats, e.g. you can count how many checks exist whose status is not `0`.
+```
+$ sudo grafana-cli --pluginUrl https://github.com/sensu/grafana-sensu-go-datasource/releases/download/1.0.1/sensu-sensugo-datasource-1.0.1.zip plugins install sensu-sensugo-datasource
+installing sensu-sensugo-datasource @ 
+from url: https://github.com/sensu/grafana-sensu-go-datasource/releases/download/1.0.1/sensu-sensugo-datasource-1.0.1.zip
+into: /var/lib/grafana/plugins
 
-**FILTER**: Filters can be specified to filter the data returned by the Sensu backend.
+✔ Installed sensu-sensugo-datasource successfully 
 
-**FIELDS**: This option is only available in the `Field Selection` query type.
-Here, you can specify which fields of the data should be returned by the datasource.
+Restart grafana after installing plugins . <service grafana-server restart>
+```
 
-**LIMIT**: This option is only available in the `Field Selection` query type.
-Using this option you can limit the size of the resulting data set. By default, the limit is set to `100`. If you don't want to use any limit, you can disable the limit by setting the limit to `0`.
+2. Restart `grafana-server` to enable the data source plugin.
 
-**AGGREGATION**: This option is only available in the `Aggregation` query type.
-Using this option, you can specify how the data returned by the Sensu backend should be aggregated. E.g. `count` will just give you the number of objects in the data set.
+### 3. Configure
 
-**FORMAT**: The data format to return. _Time Series_ is only suitable for aggregated values and supports numeric values only!
+In Grafana, select Configuration and Data Sources from the side menu.
+Select Add data source, and choose Sensu Go.
 
-### Using the Datasource for Template Variables
+To configure the Sensu Go Data Source:
 
-The Sensu Go Datasource is supporting fetching of template variables. In this case, Grafana requires to enter a query string which specifies which data is used as template variables.
+- **Add your Sensu backend API URL** (default: `http://localhost:8080`). When connecting to a Sensu cluster, connect to any single backend in the cluster. For more information about configuring the Sensu API URL, see the [Sensu docs][4].
+- **Check the option for Basic Auth**.
+- **Add a Sensu username and password** with get and list permissions for entities, events, and namespaces (default admin user: username `admin`, password `P@ssw0rd!`). For more information about creating a Sensu cluster role, see the [Sensu docs][5].
 
-You can see a string representation of a query when collapsing the query editor. It is important to state that the query string used for fetching of template variables is not supporting aggregation, limits and only a single field can be queried.
+<img alt="Grafana user interface showing the configuration settings for the Sensu Go Data Source"
+  src="/images/configure-data-source.png"
+  width="750"
+/>
 
-A query string is structured as follows:
+Select Save & Test. You should see a banner confirming that Grafana is connected to Sensu Go.
+
+<img alt="Confirmation banner with the message: Successfully connected against the Sensu Go API"
+  src="/images/configure-success.png"
+  width="750"
+/>
+
+## Using the Sensu Go Data Source
+
+To build a query, select the Sensu Go data source and the Entity, Events, or Namespaces API.
+See the Sensu docs to learn about available attributes for [entities][6], [events][7], and [namespaces][8].
+To learn more about building dashboards, see the [Grafana docs][9].
+
+<img alt="Grafana user interface showing the query builder with Sensu Go and the Entity API selected"
+  src="/images/build-query.png"
+  width="750"
+/>
+
+The Sensu Go Data Source supports query strings with the structure:
 
     QUERY API (entity|events|namespaces) [IN NAMESPACE (namespace)] SELECT (field-key) [WHERE (field-key)(=|!=|=~|!~|<|>)(field-value) [AND (field-key)(=|!=|=~|!~|<|>)(field-value)]]
 
-> Note: currently the query's keywords have to be in upper-case!
+> Note: Query keywords are case sensitive.
 
-**Example**: the following query returns all hostnames which contains the string `novatec` in the `default` namespace (the namespace `default` will be used when `IN NAMESPACE` is not specified):
+You can use `IN NAMESPACE` with the entity and events APIs to restrict queries to a specified namespace. When omitted, `IN NAMESPACE` defaults to the `default` namespace.
 
-    QUERY API entity SELECT system.hostname WHERE system.hostname=~/novatec/
+For example, the following query returns hostnames containing the string `webserver` within the `default` namespace:
 
-**Example**: the following query returns all hostnames in namespace `foo` whose status check is larger than `0`:
+```
+QUERY API entity SELECT system.hostname WHERE system.hostname=~/webserver/
+```
 
-    QUERY API events IN NAMESPACE foo SELECT entity.system.hostname WHERE check.status>0
+The following query returns entity hostnames with active, non-OK events within the `ops` namespace:
 
-**Example**: the following query returns all namespaces whose name starts with `f`:
-    
-    QUERY API namespaces SELECT name WHERE name=~/^f/
+```
+QUERY API events IN NAMESPACE ops SELECT entity.system.hostname WHERE check.status>0
+```
 
-> Note: `IN NAMESPACE` will be ignored when querying the namespaces API!
+The following query returns all namespaces with names starting with `x`:
 
-## Developing and Building the Datasource
+```
+QUERY API namespaces SELECT name WHERE name=~/^x/
+```
 
-### Developing
+## Contributing
 
-This project is managed using NPM, so please ensure that NPM is installed on your system.
+### Local development
 
-First, run the `npm install` command for installing all required dependencies.
+This project requires [npm].
 
-If the plugin is under development, the command `npm run watch` can be used to start a watch server which rebuilds the source files when a change is detected. The built files will be located in the `dist` directory.
+To install required dependencies:
 
-It is very handy to link the `dist` directory into Grafana's plugin directory, thus, Grafana always has the latest version available.
+```
+npm install
+```
 
-If the project should just be build the command `npm run build` can be used.
+To build the project:
 
-### Releasing and Bundling
+```
+npm run build
+```
 
-This project uses the [release-it](https://www.npmjs.com/package/release-it) plugin for creating a release bundle.
+You can run `npm run watch` to start a watch server which rebuilds the source files when a change is detected.
+The built files are located in the `dist` directory.
+For an easier development workflow, link the `dist` directory into Grafana's plugin directory, so Grafana always has the latest version available.
 
-The release bundle will be a zip archive, containing the datasource which is ready for mounting into Grafana or using in combination with Grafana's provisioning mechanisms.
+### Releasing and bundling
 
-In order to create a release bundle, ensure `release-it` is installed.
+This project uses the [release-it][10] plugin to create release bundles: zip archives ready for mounting into Grafana or using in combination with Grafana's provisioning mechanisms.
 
-    npm install --global release-it
+To create a release bundle, ensure `release-it` is installed:
 
-The command for building a release bundle will be:
+```
+npm install --global release-it
+```
 
-    release-it [--no-git.requireCleanWorkingDir]
+To build a release bundle:
 
-Running `release-it` will create a `releases` directory containing the built zip archive.
+```
+release-it [--no-git.requireCleanWorkingDir]
+```
+
+Running `release-it` creates a `releases` directory containing the built zip archive.
+
+[1]: https://grafana.com/docs/plugins/
+[2]: https://github.com/sensu/grafana-sensu-go-datasource/releases
+[3]: https://grafana.com/docs/plugins/installation/
+[4]: https://docs.sensu.io/sensu-go/latest/reference/backend/#general-configuration-flags
+[5]: https://docs.sensu.io/sensu-go/latest/reference/rbac/#assigning-group-permissions-across-all-namespaces
+[6]: https://docs.sensu.io/sensu-go/latest/reference/entities/
+[7]: https://docs.sensu.io/sensu-go/latest/reference/events/
+[8]: https://docs.sensu.io/sensu-go/latest/reference/rbac/#namespaces
+[9]: https://grafana.com/docs/guides/basic_concepts/
+[10]: https://www.npmjs.com/package/release-it
+[npm]: https://www.npmjs.com/get-npm
