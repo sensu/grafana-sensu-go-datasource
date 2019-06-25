@@ -22,23 +22,26 @@ You can use the Sensu Go Data Source to customize your monitoring dashboards wit
 
 ## Setup
 
-### 1. Download
+### 1. Identify release
 
-Download the Sensu Go Data Source from [releases](https://github.com/sensu/grafana-sensu-go-datasource/releases).
+Grab the URL for [the latest release zip file](https://github.com/sensu/grafana-sensu-go-datasource/releases).
 
 ### 2. Add to Grafana
 
-Extract the Sensu Go Data Source into the `/var/lib/grafana/plugins` directory:
+1. Use [`grafana-cli`](https://grafana.com/docs/plugins/installation/) to install the plugin by providing the plugin zip URL as the value of the `--pluginUrl` flag:
 
 ```
-sudo tar -xvf sensu-go-datasource.tar -C /var/lib/grafana/plugins
+$ sudo grafana-cli --pluginUrl https://github.com/sensu/grafana-sensu-go-datasource/releases/download/1.0.1/sensu-sensugo-datasource-1.0.1.zip plugins install sensu-sensugo-datasource
+installing sensu-sensugo-datasource @ 
+from url: https://github.com/sensu/grafana-sensu-go-datasource/releases/download/1.0.1/sensu-sensugo-datasource-1.0.1.zip
+into: /var/lib/grafana/plugins
+
+✔ Installed sensu-sensugo-datasource successfully 
+
+Restart grafana after installing plugins . <service grafana-server restart>
 ```
 
-Restart Grafana:
-
-```
-sudo service grafana-server restart
-```
+2. Restart `grafana-server` to enable the data source plugin.
 
 ### 3. Configure
 
