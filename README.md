@@ -17,18 +17,18 @@
   </a>
 </p>
 
-Sensu Go Data Source is a [Grafana plugin](https://grafana.com/docs/plugins/) that allows Grafana to connect to the Sensu API.
+Sensu Go Data Source is a [Grafana plugin][1] that allows Grafana to connect to the Sensu API.
 You can use the Sensu Go Data Source to customize your monitoring dashboards with information about Sensu entities and events.
 
 ## Setup
 
 ### 1. Identify release
 
-Grab the URL for [the latest release zip file](https://github.com/sensu/grafana-sensu-go-datasource/releases).
+Grab the URL for [the latest release zip file][2].
 
 ### 2. Add to Grafana
 
-1. Use [`grafana-cli`](https://grafana.com/docs/plugins/installation/) to install the plugin by providing the plugin zip URL as the value of the `--pluginUrl` flag:
+1. Use [`grafana-cli`][3] to install the plugin by providing the plugin zip URL as the value of the `--pluginUrl` flag:
 
 ```
 $ sudo grafana-cli --pluginUrl https://github.com/sensu/grafana-sensu-go-datasource/releases/download/1.0.1/sensu-sensugo-datasource-1.0.1.zip plugins install sensu-sensugo-datasource
@@ -50,9 +50,9 @@ Select Add data source, and choose Sensu Go.
 
 To configure the Sensu Go Data Source:
 
-- **Add your Sensu backend API URL** (default: `http://localhost:8080`). When connecting to a Sensu cluster, connect to any single backend in the cluster. For more information about configuring the Sensu API URL, see the [Sensu docs](https://docs.sensu.io/sensu-go/latest/reference/backend/#general-configuration-flags).
+- **Add your Sensu backend API URL** (default: `http://localhost:8080`). When connecting to a Sensu cluster, connect to any single backend in the cluster. For more information about configuring the Sensu API URL, see the [Sensu docs][4].
 - **Check the option for Basic Auth**.
-- **Add a Sensu username and password** with get and list permissions for entities, events, and namespaces (default admin user: username `admin`, password `P@ssw0rd!`). For more information about creating a Sensu cluster role, see the [Sensu docs](https://docs.sensu.io/sensu-go/latest/reference/rbac/#assigning-group-permissions-across-all-namespaces).
+- **Add a Sensu username and password** with get and list permissions for entities, events, and namespaces (default admin user: username `admin`, password `P@ssw0rd!`). For more information about creating a Sensu cluster role, see the [Sensu docs][5].
 
 <img alt="Grafana user interface showing the configuration settings for the Sensu Go Data Source"
   src="/images/configure-data-source.png"
@@ -69,8 +69,8 @@ Select Save & Test. You should see a banner confirming that Grafana is connected
 ## Using the Sensu Go Data Source
 
 To build a query, select the Sensu Go data source and the Entity, Events, or Namespaces API.
-See the Sensu docs to learn about available attributes for [entities](https://docs.sensu.io/sensu-go/latest/reference/entities/), [events](https://docs.sensu.io/sensu-go/latest/reference/events/), and [namespaces](https://docs.sensu.io/sensu-go/latest/reference/rbac/#namespaces).
-To learn more about building dashboards, see the [Grafana docs](https://grafana.com/docs/guides/basic_concepts/) 
+See the Sensu docs to learn about available attributes for [entities][6], [events][7], and [namespaces][8].
+To learn more about building dashboards, see the [Grafana docs][9].
 
 <img alt="Grafana user interface showing the query builder with Sensu Go and the Entity API selected"
   src="/images/build-query.png"
@@ -107,7 +107,7 @@ QUERY API namespaces SELECT name WHERE name=~/^x/
 
 ### Local development
 
-This project requires [npm](https://www.npmjs.com/get-npm).
+This project requires [npm].
 
 To install required dependencies:
 
@@ -127,7 +127,7 @@ For an easier development workflow, link the `dist` directory into Grafana's plu
 
 ### Releasing and bundling
 
-This project uses the [release-it](https://www.npmjs.com/package/release-it) plugin to create release bundles: zip archives ready for mounting into Grafana or using in combination with Grafana's provisioning mechanisms.
+This project uses the [release-it][10] plugin to create release bundles: zip archives ready for mounting into Grafana or using in combination with Grafana's provisioning mechanisms.
 
 To create a release bundle, ensure `release-it` is installed:
 
@@ -142,3 +142,15 @@ release-it [--no-git.requireCleanWorkingDir]
 ```
 
 Running `release-it` creates a `releases` directory containing the built zip archive.
+
+[1]: https://grafana.com/docs/plugins/
+[2]: https://github.com/sensu/grafana-sensu-go-datasource/releases
+[3]: https://grafana.com/docs/plugins/installation/
+[4]: https://docs.sensu.io/sensu-go/latest/reference/backend/#general-configuration-flags
+[5]: https://docs.sensu.io/sensu-go/latest/reference/rbac/#assigning-group-permissions-across-all-namespaces
+[6]: https://docs.sensu.io/sensu-go/latest/reference/entities/
+[7]: https://docs.sensu.io/sensu-go/latest/reference/events/
+[8]: https://docs.sensu.io/sensu-go/latest/reference/rbac/#namespaces
+[9]: https://grafana.com/docs/guides/basic_concepts/
+[10]: https://www.npmjs.com/package/release-it
+[npm]: https://www.npmjs.com/get-npm
