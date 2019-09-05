@@ -5,4 +5,5 @@ export default interface QueryComponents {
   readonly namespace: string;
   readonly selectedField: string;
   readonly filters: Filter[];
+  readonly limit: number;
 };

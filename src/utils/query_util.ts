@@ -1,13 +1,9 @@
 import _ from 'lodash';
+import { DEFAULT_LIMIT, DEFAULT_AGGREGATION_LIMIT } from '../constants';
 
 import QueryComponents from '../model/QueryComponents';
 
-/**
- * The default limit.
- */
-const DEFAULT_LIMIT: number = 100;
-
-const QUERY_FULL_REG_EXP = /QUERY\s+API\s+(entity|events|namespaces)\s+(IN\s+NAMESPACE\s+(\S+)\s+)?SELECT\s+(\S+)(\s+WHERE\s+(\S+\s*(=~?|!=|>|<|!=)\s*\S+(\s+AND\s+\S+\s*(=~?|!=|>|<|!=)\s*\S+)*))?/;
+const QUERY_FULL_REG_EXP = /QUERY\s+API\s+(entity|events|namespaces)\s+(IN\s+NAMESPACE\s+(\S+)\s+)?SELECT\s+(\S+)(\s+WHERE\s+(\S+\s*(=~?|!=|>|<|!=)\s*\S+(\s+AND\s+\S+\s*(=~?|!=|>|<|!=)\s*\S+)*))?(\s+LIMIT\s+(\d+))?/;
 const QUERY_SINGLE_FILTER_REG_EXP = /(\S+)\s*(=~?|!=|>|<|!~)\s*(\S+)/g;
 
 /**
@@ -100,7 +96,12 @@ const _whereClause = (target: any) => {
 const _limit = (target: any) => {
   let queryLimit = target.limit;
   if (!target.limit) {
-    queryLimit = DEFAULT_LIMIT;
+    // Use a special default limit in aggregation queries
+    if (target.queryType === 'aggregation') {
+      queryLimit = DEFAULT_AGGREGATION_LIMIT;
+    } else {
+      queryLimit = DEFAULT_LIMIT;
+    }
   }
 
   queryLimit = _.defaultTo(parseInt(queryLimit), DEFAULT_LIMIT);
@@ -130,6 +131,7 @@ export const extractQueryComponents = (query: string) => {
     namespace: namespace,
     selectedField: matchResult[4],
     filters: [],
+    limit: parseInt(matchResult[11])
   };
 
   if (matchResult[6] !== undefined) {

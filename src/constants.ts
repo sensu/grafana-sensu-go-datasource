@@ -3,6 +3,16 @@ import ApiEndpoint from './model/ApiEndpoint';
 import TextValue from './model/TextValue';
 
 /**
+ * The default limit.
+ */
+export const DEFAULT_LIMIT: number = 100;
+
+/**
+ * The default limit for aggregation queries.
+ */
+export const DEFAULT_AGGREGATION_LIMIT: number = 0;
+
+/**
  * Supported aggregation functions.
  */
 export const AGGREGATION_TYPES = <AggregationType[]>[
