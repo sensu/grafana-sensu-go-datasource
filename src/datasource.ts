@@ -2,7 +2,7 @@ import _ from 'lodash';
 
 import sensu from './sensu/sensu';
 import SensuQueryOptions from './sensu/query_options';
-import {API_ENDPOINTS} from './constants';
+import { API_ENDPOINTS, DEFAULT_LIMIT, DEFAULT_AGGREGATION_LIMIT } from './constants';
 import FieldSelector from './FieldSelector';
 import FilterUtils from './utils/datasource_filter_util';
 import QueryUtils from './utils/query_util';
@@ -52,7 +52,7 @@ export default class SensuDatasource {
    * Returns the url of the API used by the given target.
    */
   _getApiUrl = target => {
-    const apiEndpoint: any = _.find(API_ENDPOINTS, {value: target.apiEndpoints});
+    const apiEndpoint: any = _.find(API_ENDPOINTS, { value: target.apiEndpoints });
     if (apiEndpoint) {
       return apiEndpoint.url;
     } else {
@@ -97,21 +97,31 @@ export default class SensuDatasource {
     );
 
     if (queryTargets.length === 0) {
-      return Promise.resolve({data: []});
+      return Promise.resolve({ data: [] });
     }
 
     const queries = queryTargets.map(prepTarget => {
       const {
         apiUrl,
         filters,
-        target: {queryType, fieldSelectors, namespace, limit},
+        target: { queryType, fieldSelectors, namespace, limit },
       } = prepTarget;
+
+      // verify and set correct limit
+      let parsedLimit: number = _.defaultTo(parseInt(limit), -1);
+      if (parsedLimit < 0) {
+        if (queryType === 'aggregation') {
+          parsedLimit = DEFAULT_AGGREGATION_LIMIT;
+        } else {
+          parsedLimit = DEFAULT_LIMIT;
+        }
+      }
 
       const queryOptions: SensuQueryOptions = {
         method: 'GET',
         url: apiUrl,
         namespace: namespace,
-        limit: limit,
+        limit: parsedLimit,
       };
 
       return sensu
@@ -131,19 +141,19 @@ export default class SensuDatasource {
 
     return Promise.all(queries).then((queryResults: any) => {
       if (options.resultAsPlainArray) {
-         // return only values - e.g. for template variables
+        // return only values - e.g. for template variables
         return _(queryResults)
           .map(result => this._transformToTable(result))
           .map(result => result.rows)
           .flatten()
           .flatten()
           .map(value => {
-            return {text: value};
+            return { text: value };
           })
           .value();
       } else {
         const resultDataList: any[] = _.flatMap(queryResults, (queryResult, index) => {
-          const {target: {format}} = queryTargets[index];
+          const { target: { format } } = queryTargets[index];
 
           if (format === 'series') {
             // return time series format
@@ -166,7 +176,7 @@ export default class SensuDatasource {
    */
   _queryAggregation = (data: any[], prepTarget: PreparedTarget) => {
     const {
-      target: {aggregationAlias: alias, aggregationType: type, aggregationField: field},
+      target: { aggregationAlias: alias, aggregationType: type, aggregationField: field },
     } = prepTarget;
     const name = alias ? alias : type;
 
@@ -433,7 +443,7 @@ export default class SensuDatasource {
    * Transforms the given query components into an options object which can be used by the `query(..)` function.
    */
   _transformQueryComponentsToQueryOptions = (queryComponents: QueryComponents) => {
-    const {apiKey, selectedField, filters, namespace} = queryComponents;
+    const { apiKey, selectedField, filters, namespace, limit } = queryComponents;
 
     const filterObjects = _.map(filters, filter => {
       return [
@@ -455,6 +465,7 @@ export default class SensuDatasource {
           apiEndpoints: apiKey,
           queryType: 'field',
           namespace: namespace,
+          limit: limit,
           fieldSelectors: [
             {
               fieldSegments: [
@@ -485,7 +496,7 @@ export default class SensuDatasource {
         };
       })
       .catch(err => {
-        return {status: 'error', message: err.message};
+        return { status: 'error', message: err.message };
       });
   }
 }

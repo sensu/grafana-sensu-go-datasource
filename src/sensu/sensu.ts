@@ -26,7 +26,7 @@ export default class Sensu {
    * @param options the options specifying the query's request
    */
   static query(datasource: any, options: QueryOptions) {
-    const {method, url, namespace, limit, forceAccessTokenRefresh} = options;
+    const { method, url, namespace, limit, forceAccessTokenRefresh } = options;
     if (forceAccessTokenRefresh) {
       delete datasource.instanceSettings.tokens;
     }
@@ -38,21 +38,13 @@ export default class Sensu {
       fullUrl = Sensu.apiBaseUrl + '/namespaces/' + namespace + url;
     }
 
-    let queryLimitString: string;
-    if (limit) {
-      queryLimitString = limit;
-    } else {
-      queryLimitString = '100';
-    }
-
-    const queryLimit = _.defaultTo(parseInt(queryLimitString), 100);
-    if (queryLimit > 0) {
-      fullUrl += '?limit=' + queryLimit;
+    if (limit > 0) {
+      fullUrl += '?limit=' + limit;
     }
 
     return this._authenticate(datasource)
       .then(() => this._request(datasource, method, fullUrl))
-      .catch(() => this.query(datasource, {...options, forceAccessTokenRefresh: true}));
+      .catch(() => this.query(datasource, { ...options, forceAccessTokenRefresh: true }));
   }
 
   /**

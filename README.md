@@ -79,7 +79,7 @@ To learn more about building dashboards, see the [Grafana docs][9].
 
 The Sensu Go Data Source supports query strings with the structure:
 
-    QUERY API (entity|events|namespaces) [IN NAMESPACE (namespace)] SELECT (field-key) [WHERE (field-key)(=|!=|=~|!~|<|>)(field-value) [AND (field-key)(=|!=|=~|!~|<|>)(field-value)]]
+    QUERY API (entity|events|namespaces) [IN NAMESPACE (namespace)] SELECT (field-key) [WHERE (field-key)(=|!=|=~|!~|<|>)(field-value) [AND (field-key)(=|!=|=~|!~|<|>)(field-value)]] [LIMIT (limit)]
 
 > Note: Query keywords are case sensitive.
 
@@ -91,10 +91,10 @@ For example, the following query returns hostnames containing the string `webser
 QUERY API entity SELECT system.hostname WHERE system.hostname=~/webserver/
 ```
 
-The following query returns entity hostnames with active, non-OK events within the `ops` namespace:
+The following query returns 100 entity hostnames with active, non-OK events within the `ops` namespace:
 
 ```
-QUERY API events IN NAMESPACE ops SELECT entity.system.hostname WHERE check.status>0
+QUERY API events IN NAMESPACE ops SELECT entity.system.hostname WHERE check.status>0 LIMIT 100
 ```
 
 The following query returns all namespaces with names starting with `x`:
