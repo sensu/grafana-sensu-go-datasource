@@ -6,6 +6,7 @@
   "metrics": true,
   "annotations": false,
   "alerting": false,
+  "skipDataQuery": false,
   "info": {
     "description": "Sensu Go Data Source for Grafana",
     "author": {

@@ -91,7 +91,7 @@ export default class SensuDatasource {
   /**
    * Executes a query.
    */
-  query(options, onlyValues?: boolean) {
+  query(options) {
     const queryTargets = _.map(options.targets, target =>
       this.prepareQuery(target, options)
     );
@@ -130,8 +130,8 @@ export default class SensuDatasource {
     });
 
     return Promise.all(queries).then((queryResults: any) => {
-      // return only values - e.g. for variables
-      if (onlyValues) {
+      if (options.resultAsPlainArray) {
+         // return only values - e.g. for template variables
         return _(queryResults)
           .map(result => this._transformToTable(result))
           .map(result => result.rows)
@@ -423,9 +423,10 @@ export default class SensuDatasource {
     if (queryComponents === null) {
       return Promise.resolve([]);
     }
-    const options = this._transformQueryComponentsToQueryOptions(queryComponents);
+    const options: any = this._transformQueryComponentsToQueryOptions(queryComponents);
+    options.resultAsPlainArray = true;
 
-    return this.query(options, true);
+    return this.query(options);
   };
 
   /**
