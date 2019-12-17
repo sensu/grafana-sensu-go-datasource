@@ -132,7 +132,7 @@ export default class Sensu {
    */
   static _handleRequestResult(result: any) {
     if (result) {
-      if (Array.isArray(result.data) && result.data.check) {
+      if (Array.isArray(result.data)) {
         result.data.forEach(o => {
           if (o.timestamp) {
             o.timestamp = o.timestamp * 1000;
