@@ -26,7 +26,7 @@ export default class Sensu {
    * @param options the options specifying the query's request
    */
   static query(datasource: any, options: QueryOptions) {
-    const { method, url, namespace, limit, forceAccessTokenRefresh } = options;
+    const {method, url, namespace, limit, forceAccessTokenRefresh} = options;
     if (forceAccessTokenRefresh) {
       delete datasource.instanceSettings.tokens;
     }
@@ -44,7 +44,7 @@ export default class Sensu {
 
     return this._authenticate(datasource)
       .then(() => this._request(datasource, method, fullUrl))
-      .catch(() => this.query(datasource, { ...options, forceAccessTokenRefresh: true }));
+      .catch(() => this.query(datasource, {...options, forceAccessTokenRefresh: true}));
   }
 
   /**
@@ -126,11 +126,27 @@ export default class Sensu {
 
   /**
    * Is called when the request is ending successfully. In case of a 401 error, the request is not throwing an error but returning no result object.
+   * It also modifies standard timestamp fields of Sensu Events (UNIX) to be compatible with Grafana's resolution (UNIX_MS)
    *
    * @param result the request's result object
    */
   static _handleRequestResult(result: any) {
     if (result) {
+      if (Array.isArray(result.data) && result.data.check) {
+        result.data.forEach(o => {
+          if (o.timestamp) {
+            o.timestamp = o.timestamp * 1000;
+          }
+          if (o.check) {
+            o.check.executed = o.check.executed * 1000;
+            o.check.issued = o.check.issued * 1000;
+            o.check.last_ok = o.check.last_ok * 1000;
+          }
+          if (o.entity) {
+            o.entity.last_seen = o.entity.last_seen * 1000;
+          }
+        });
+      }
       return result;
     } else {
       throw {
