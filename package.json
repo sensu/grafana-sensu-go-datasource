@@ -24,7 +24,7 @@
     "semi": true
   },
   "dependencies": {
-    "lodash": "^4.17.4"
+    "lodash": "^4.17.19"
   },
   "devDependencies": {
     "@types/grafana": "github:CorpGlory/types-grafana.git",
