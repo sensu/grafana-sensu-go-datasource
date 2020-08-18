@@ -19,6 +19,8 @@ export default class Sensu {
    */
   static readonly apiBaseUrl = '/api/core/v2';
 
+  static readonly apiKeyUrlPrefix = '/api_key_auth';
+
   /**
    * Executes a query against the given datasource. An access token will be gathered if needed.
    *
@@ -26,7 +28,9 @@ export default class Sensu {
    * @param options the options specifying the query's request
    */
   static query(datasource: any, options: QueryOptions) {
-    const {method, url, namespace, limit, forceAccessTokenRefresh} = options;
+    const { method, url, namespace, limit, forceAccessTokenRefresh } = options;
+    const { useApiKey } = datasource.instanceSettings.jsonData;
+
     if (forceAccessTokenRefresh) {
       delete datasource.instanceSettings.tokens;
     }
@@ -44,18 +48,25 @@ export default class Sensu {
 
     return this._authenticate(datasource)
       .then(() => this._request(datasource, method, fullUrl))
-      .catch(() => this.query(datasource, {...options, forceAccessTokenRefresh: true}));
+      .catch((error) => {
+        if (!useApiKey && !forceAccessTokenRefresh) {
+          // in case api tokens (not api key) are used, try to refresh the token
+          this.query(datasource, { ...options, forceAccessTokenRefresh: true });
+        } else {
+          throw error;
+        }
+      });
   }
 
   /**
    * Checks whether an access token exist. If none exists or it is expired a new one will be fetched.
+   * In case an api key auth is used, this method will never fetch a token.
    *
    * @param datasource the datasource to use
    */
   static _authenticate(datasource: any) {
-    const instanceSettings = datasource.instanceSettings;
-    let acquireToken =
-      !instanceSettings.tokens || this._isTokenExpired(instanceSettings.tokens);
+    const { tokens, jsonData: { useApiKey } } = datasource.instanceSettings;
+    let acquireToken = !useApiKey && (!tokens || this._isTokenExpired(tokens)); // never aquire token in case of api key auth
     if (acquireToken) {
       return this._acquireAccessToken(datasource);
     } else {
@@ -105,16 +116,20 @@ export default class Sensu {
    * @param url the url to send the request to
    */
   static _request(datasource: any, method: string, url: string) {
+    const { useApiKey } = datasource.instanceSettings.jsonData;
+
+    const urlPrefix = useApiKey ? Sensu.apiKeyUrlPrefix : '';
+
     let req: any = {
       method: method,
-      url: datasource.url + url,
+      url: datasource.url + urlPrefix + url,
     };
 
     req.headers = {
       'Content-Type': 'application/json',
     };
 
-    if (_.has(datasource.instanceSettings, 'tokens')) {
+    if (!useApiKey && _.has(datasource.instanceSettings, 'tokens')) {
       req.headers.Authorization =
         'Bearer ' + datasource.instanceSettings.tokens.access_token;
     }

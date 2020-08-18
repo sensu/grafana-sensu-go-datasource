@@ -487,16 +487,23 @@ export default class SensuDatasource {
    * Used by the config UI to test a datasource.
    */
   testDatasource() {
+    const { useApiKey } = this.instanceSettings.jsonData;
+
+    const testUrl = useApiKey ? '/api/core/v2/namespaces' : '/auth/test';
+
     return sensu
-      ._request(this, 'GET', '/auth/test')
+      ._request(this, 'GET', testUrl)
       .then(() => {
         return {
           status: 'success',
           message: 'Successfully connected against the Sensu Go API',
         };
       })
-      .catch(err => {
-        return { status: 'error', message: err.message };
+      .catch(error => {
+        if (useApiKey && error.data === 'access_error') {
+          return { status: 'error', message: 'API Key Invalid: Could not logged in using API key' };
+        }
+        return { status: 'error', message: error.message };
       });
   }
 }

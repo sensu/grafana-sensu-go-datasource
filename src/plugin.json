@@ -21,6 +21,14 @@
     "updated": "%TODAY%"
   },
   "dependencies": {
-    "grafanaVersion": "5.3.x"
-  }
+    "grafanaVersion": "6.0.0"
+  },
+  "routes": [
+    {
+      "path": "api_key_auth",
+      "method": "GET",
+      "url": "{{.JsonData.currentUrl}}",
+      "headers": [{ "name": "Authorization", "content": "Key {{.SecureJsonData.appInsightsApiKey}}" }]
+    }
+  ]
 }
