@@ -51,16 +51,18 @@ Select Add data source, and choose Sensu Go.
 To configure the Sensu Go Data Source:
 
 1. **Add your Sensu backend API URL** (default: `http://localhost:8080`). When connecting to a Sensu cluster, connect to any single backend in the cluster. For more information about configuring the Sensu API URL, see the [Sensu docs][4].
-2. **Configure the authentification mechanism**. Since version 1.1.0 of the data source, you can choose between API key and Basic Auth authentication
+2. **Configure the authentification mechanism**. Since version 1.1.0 of the data source it is possible to choose between **API key** and **Basic Auth** authentication.
 
-   * **Basic Auth** - **Check the option for Basic Auth**. - **Add a Sensu username and password** with get and list permissions for entities, events, and namespaces (default admin user: username `admin`, password `P@ssw0rd!`). For more information about creating a Sensu cluster role, see the [Sensu docs][5].
+   * **Basic Auth**
+     _ **Check the option for Basic Auth**.
+     _ **Add a Sensu username and password** with get and list permissions for entities, events, and namespaces (default admin user: username `admin`, password `P@ssw0rd!`). For more information about creating a Sensu cluster role, see the [Sensu docs][5].
      <img alt="Grafana user interface showing the configuration settings for the Sensu Go Data Source"
   src="/images/configure-data-source.png"
   width="750"
 />
    * **API Key Auth**
      * **Enable the option for the usage of an API key**.
-     * **Enter the API key which you want to use**. See the Sensu Go [documentation][api_key_doc] for information on how to create an API key.
+     * **Enter the API key which you want to use**. See the Sensu Go documentation for information on [how to create an API key][api_key_doc].
        ![API key configuration in the Sensu So Data Source](/images/configure-api-key.png)
 
 3. Select Save & Test. You should see a banner confirming that Grafana is connected to Sensu Go.
