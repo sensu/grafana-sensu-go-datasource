@@ -13,7 +13,7 @@
   "author": "Novatec Consulting GmbH",
   "license": "",
   "lint-staged": {
-    "*.{js,ts,json,css,md}": ["prettier --write", "git add"]
+    "*.{js,ts,json,css}": ["prettier --write", "git add"]
   },
   "prettier": {
     "singleQuote": true,
