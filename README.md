@@ -32,11 +32,11 @@ Grab the URL for [the latest release zip file][2].
 
 ```
 $ sudo grafana-cli --pluginUrl https://github.com/sensu/grafana-sensu-go-datasource/releases/download/1.0.1/sensu-sensugo-datasource-1.0.1.zip plugins install sensu-sensugo-datasource
-installing sensu-sensugo-datasource @ 
+installing sensu-sensugo-datasource @
 from url: https://github.com/sensu/grafana-sensu-go-datasource/releases/download/1.0.1/sensu-sensugo-datasource-1.0.1.zip
 into: /var/lib/grafana/plugins
 
-✔ Installed sensu-sensugo-datasource successfully 
+✔ Installed sensu-sensugo-datasource successfully
 
 Restart grafana after installing plugins . <service grafana-server restart>
 ```
@@ -50,18 +50,21 @@ Select Add data source, and choose Sensu Go.
 
 To configure the Sensu Go Data Source:
 
-- **Add your Sensu backend API URL** (default: `http://localhost:8080`). When connecting to a Sensu cluster, connect to any single backend in the cluster. For more information about configuring the Sensu API URL, see the [Sensu docs][4].
-- **Check the option for Basic Auth**.
-- **Add a Sensu username and password** with get and list permissions for entities, events, and namespaces (default admin user: username `admin`, password `P@ssw0rd!`). For more information about creating a Sensu cluster role, see the [Sensu docs][5].
+1. **Add your Sensu backend API URL** (default: `http://localhost:8080`). When connecting to a Sensu cluster, connect to any single backend in the cluster. For more information about configuring the Sensu API URL, see the [Sensu docs][4].
+2. **Configure the authentification mechanism**. Since version 1.1.0 of the data source, you can choose between API key and Basic Auth authentication
 
-<img alt="Grafana user interface showing the configuration settings for the Sensu Go Data Source"
+   * **Basic Auth** - **Check the option for Basic Auth**. - **Add a Sensu username and password** with get and list permissions for entities, events, and namespaces (default admin user: username `admin`, password `P@ssw0rd!`). For more information about creating a Sensu cluster role, see the [Sensu docs][5].
+     <img alt="Grafana user interface showing the configuration settings for the Sensu Go Data Source"
   src="/images/configure-data-source.png"
   width="750"
 />
+   * **API Key Auth**
+     * **Enable the option for the usage of an API key**.
+     * **Enter the API key which you want to use**. See the Sensu Go [documentation][api_key_doc] for information on how to create an API key.
+       ![API key configuration in the Sensu So Data Source](/images/configure-api-key.png)
 
-Select Save & Test. You should see a banner confirming that Grafana is connected to Sensu Go.
-
-<img alt="Confirmation banner with the message: Successfully connected against the Sensu Go API"
+3. Select Save & Test. You should see a banner confirming that Grafana is connected to Sensu Go.
+   <img alt="Confirmation banner with the message: Successfully connected against the Sensu Go API"
   src="/images/configure-success.png"
   width="750"
 />
@@ -154,3 +157,4 @@ Running `release-it` creates a `releases` directory containing the built zip arc
 [9]: https://grafana.com/docs/guides/basic_concepts/
 [10]: https://www.npmjs.com/package/release-it
 [npm]: https://www.npmjs.com/get-npm
+[api_key_doc]: https://docs.sensu.io/sensu-go/latest/reference/apikeys/
