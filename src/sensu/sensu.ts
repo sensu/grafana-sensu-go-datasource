@@ -46,12 +46,12 @@ export default class Sensu {
       fullUrl += '?limit=' + limit;
     }
 
-    return this._authenticate(datasource)
-      .then(() => this._request(datasource, method, fullUrl))
+    return Sensu._authenticate(datasource)
+      .then(() => Sensu._request(datasource, method, fullUrl))
       .catch((error) => {
         if (!useApiKey && !forceAccessTokenRefresh) {
           // in case api tokens (not api key) are used, try to refresh the token
-          this.query(datasource, { ...options, forceAccessTokenRefresh: true });
+          Sensu.query(datasource, { ...options, forceAccessTokenRefresh: true });
         } else {
           throw error;
         }
@@ -66,9 +66,15 @@ export default class Sensu {
    */
   static _authenticate(datasource: any) {
     const { tokens, jsonData: { useApiKey } } = datasource.instanceSettings;
-    let acquireToken = !useApiKey && (!tokens || this._isTokenExpired(tokens)); // never aquire token in case of api key auth
+
+    // never aquire token in case of api key auth
+    if (useApiKey) {
+      return Promise.resolve(true);
+    }
+
+    let acquireToken = !tokens || Sensu._isTokenExpired(tokens);
     if (acquireToken) {
-      return this._acquireAccessToken(datasource);
+      return Sensu._acquireAccessToken(datasource);
     } else {
       return Promise.resolve(true);
     }
@@ -84,7 +90,7 @@ export default class Sensu {
     let expiresAt: number = token.expires_at;
 
     if (token.expires_offset) {
-      expiresAt = expiresAt - token.expires_offset - this.tokenExpireOffset_s;
+      expiresAt = expiresAt - token.expires_offset - Sensu.tokenExpireOffset_s;
     }
 
     return expiresAt < timestampNow;
@@ -96,11 +102,11 @@ export default class Sensu {
    * @param datasource the datasource to use
    */
   static _acquireAccessToken(datasource: any) {
-    return this._request(datasource, 'GET', '/auth').then(result => {
+    return Sensu._request(datasource, 'GET', '/auth').then(result => {
       let tokens: AccessToken = result.data;
 
       let timestampNow: number = Math.floor(Date.now() / 1000);
-      let expiresOffset: number = tokens.expires_at - timestampNow - this.tokenTimeout_s;
+      let expiresOffset: number = tokens.expires_at - timestampNow - Sensu.tokenTimeout_s;
 
       tokens.expires_offset = expiresOffset;
 
@@ -118,25 +124,30 @@ export default class Sensu {
   static _request(datasource: any, method: string, url: string) {
     const { useApiKey } = datasource.instanceSettings.jsonData;
 
-    const urlPrefix = useApiKey ? Sensu.apiKeyUrlPrefix : '';
-
-    let req: any = {
-      method: method,
-      url: datasource.url + urlPrefix + url,
+    const req: any = {
+      method: method
     };
 
     req.headers = {
       'Content-Type': 'application/json',
     };
 
-    if (!useApiKey && _.has(datasource.instanceSettings, 'tokens')) {
-      req.headers.Authorization =
-        'Bearer ' + datasource.instanceSettings.tokens.access_token;
+    if (useApiKey) {
+      // authentication via api key using authentication route
+      req.url = datasource.url + Sensu.apiKeyUrlPrefix + url;
+    } else {
+      // authetnication via bearer token
+      req.url = datasource.url + url;
+
+      if (_.has(datasource.instanceSettings, 'tokens')) {
+        req.headers.Authorization =
+          'Bearer ' + datasource.instanceSettings.tokens.access_token;
+      }
     }
 
     return datasource.backendSrv
       .datasourceRequest(req)
-      .then(this._handleRequestResult, this._handleRequestError);
+      .then(Sensu._handleRequestResult, Sensu._handleRequestError);
   }
 
   /**

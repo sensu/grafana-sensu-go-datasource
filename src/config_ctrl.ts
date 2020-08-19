@@ -1,4 +1,4 @@
-import { ConfigSettings } from './model/ConfigSettings';
+import InstanceSettings from './model/InstanceSettings';
 
 /**
  * Controller responsible for the configuration ui.
@@ -7,7 +7,7 @@ export class SensuConfigCtrl {
   static templateUrl = 'partials/config.html';
 
   // the current datasource settings
-  current: ConfigSettings;
+  current: InstanceSettings;
 
   /** @ngInject **/
   constructor($scope) {

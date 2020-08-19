@@ -1,4 +1,4 @@
-export interface ConfigSettings {
+export default interface ConfigSettings {
   // the datasource url
   url: string;
 

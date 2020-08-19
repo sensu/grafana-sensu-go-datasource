@@ -12,12 +12,14 @@ import ColumnMapping from './model/ColumnMapping';
 import DataPoint from './model/DataPoint';
 import Filter from './model/Filter';
 import QueryComponents from './model/QueryComponents';
+import InstanceSettings from './model/InstanceSettings';
 
 export default class SensuDatasource {
+  
   url: string;
 
   /** @ngInject */
-  constructor(public instanceSettings, public backendSrv, private templateSrv) {
+  constructor(public instanceSettings: InstanceSettings, public backendSrv, private templateSrv) {
     this.url = instanceSettings.url.trim();
   }
 
