@@ -54,8 +54,8 @@ To configure the Sensu Go Data Source:
 2. **Configure the authentification mechanism**. Since version 1.1.0 of the data source it is possible to choose between **API key** and **Basic Auth** authentication.
 
    * **Basic Auth**
-     _ **Check the option for Basic Auth**.
-     _ **Add a Sensu username and password** with get and list permissions for entities, events, and namespaces (default admin user: username `admin`, password `P@ssw0rd!`). For more information about creating a Sensu cluster role, see the [Sensu docs][5].
+     * **Check the option for Basic Auth**.
+     * **Add a Sensu username and password** with get and list permissions for entities, events, and namespaces (default admin user: username `admin`, password `P@ssw0rd!`). For more information about creating a Sensu cluster role, see the [Sensu docs][5].
      <img alt="Grafana user interface showing the configuration settings for the Sensu Go Data Source"
   src="/images/configure-data-source.png"
   width="750"
