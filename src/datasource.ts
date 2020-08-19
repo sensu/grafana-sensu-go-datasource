@@ -489,6 +489,7 @@ export default class SensuDatasource {
   testDatasource() {
     const { useApiKey } = this.instanceSettings.jsonData;
 
+    // the /auth/test endpoint is only available for testing basic auth credentials
     const testUrl = useApiKey ? '/api/core/v2/namespaces' : '/auth/test';
 
     return sensu

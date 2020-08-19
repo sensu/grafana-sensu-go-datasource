@@ -28,7 +28,7 @@
       "path": "api_key_auth",
       "method": "GET",
       "url": "{{.JsonData.currentUrl}}",
-      "headers": [{ "name": "Authorization", "content": "Key {{.SecureJsonData.appInsightsApiKey}}" }]
+      "headers": [{ "name": "Authorization", "content": "Key {{.SecureJsonData.apiKey}}" }]
     }
   ]
 }
