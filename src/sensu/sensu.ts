@@ -38,7 +38,8 @@ export default class Sensu {
     if (url === '/namespaces') {
       fullUrl = Sensu.apiBaseUrl + '/namespaces';
     } else {
-      fullUrl = Sensu.apiBaseUrl + '/namespaces/' + namespace + url;
+      const namespacePath = namespace === '*' ? '' : '/namespaces/' + namespace;
+      fullUrl = Sensu.apiBaseUrl + namespacePath + url;
     }
 
     if (limit > 0) {
