@@ -1,6 +1,4 @@
-import AggregationType from './model/AggregationType';
-import ApiEndpoint from './model/ApiEndpoint';
-import TextValue from './model/TextValue';
+import {AggregationType, ApiEndpoint, TextValue} from './types';
 
 /**
  * The default limit.
@@ -41,11 +39,12 @@ export const API_ENDPOINTS = <ApiEndpoint[]>[
     text: 'Events API',
     value: 'events',
     url: '/events',
-  }, {
+  },
+  {
     text: 'Namespaces API',
     value: 'namespaces',
     url: '/namespaces',
-  }
+  },
 ];
 
 /**
