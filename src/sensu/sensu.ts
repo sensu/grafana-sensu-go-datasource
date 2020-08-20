@@ -47,7 +47,7 @@ export default class Sensu {
 
     return Sensu._authenticate(datasource)
       .then(() => Sensu._request(datasource, method, fullUrl))
-      .catch((error) => {
+      .catch(error => {
         if (!useApiKey && !forceAccessTokenRefresh) {
           // in case api tokens (not api key) are used, try to refresh the token
           Sensu.query(datasource, {...options, forceAccessTokenRefresh: true});
@@ -64,10 +64,7 @@ export default class Sensu {
    * @param datasource the datasource to use
    */
   static _authenticate(datasource: any) {
-    const {
-      tokens,
-      jsonData: {useApiKey},
-    } = datasource.instanceSettings;
+    const {tokens, jsonData: {useApiKey}} = datasource.instanceSettings;
 
     // never aquire token in case of api key auth
     if (useApiKey) {
@@ -104,7 +101,7 @@ export default class Sensu {
    * @param datasource the datasource to use
    */
   static _acquireAccessToken(datasource: any) {
-    return Sensu._request(datasource, 'GET', '/auth').then((result) => {
+    return Sensu._request(datasource, 'GET', '/auth').then(result => {
       let tokens: AccessToken = result.data;
 
       let timestampNow: number = Math.floor(Date.now() / 1000);
@@ -154,27 +151,11 @@ export default class Sensu {
 
   /**
    * Is called when the request is ending successfully. In case of a 401 error, the request is not throwing an error but returning no result object.
-   * It also modifies standard timestamp fields of Sensu Events (UNIX) to be compatible with Grafana's resolution (UNIX_MS)
    *
    * @param result the request's result object
    */
   static _handleRequestResult(result: any) {
     if (result) {
-      if (Array.isArray(result.data)) {
-        result.data.forEach((o) => {
-          if (o.timestamp) {
-            o.timestamp = o.timestamp * 1000;
-          }
-          if (o.check) {
-            o.check.executed = o.check.executed * 1000;
-            o.check.issued = o.check.issued * 1000;
-            o.check.last_ok = o.check.last_ok * 1000;
-          }
-          if (o.entity) {
-            o.entity.last_seen = o.entity.last_seen * 1000;
-          }
-        });
-      }
       return result;
     } else {
       throw {
