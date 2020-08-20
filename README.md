@@ -84,11 +84,14 @@ To learn more about building dashboards, see the [Grafana docs][9].
 
 The Sensu Go Data Source supports query strings with the structure:
 
-    QUERY API (entity|events|namespaces) [IN NAMESPACE (namespace)] SELECT (field-key) [WHERE (field-key)(=|!=|=~|!~|<|>)(field-value) [AND (field-key)(=|!=|=~|!~|<|>)(field-value)]] [LIMIT (limit)]
+    QUERY API (entity|events|namespaces) [IN NAMESPACE (*|namespace)] SELECT (field-key) [WHERE (field-key)(=|!=|=~|!~|<|>)(field-value) [AND (field-key)(=|!=|=~|!~|<|>)(field-value)]] [LIMIT (limit)]
 
 > Note: Query keywords are case sensitive.
 
-You can use `IN NAMESPACE` with the entity and events APIs to restrict queries to a specified namespace. When omitted, `IN NAMESPACE` defaults to the `default` namespace.
+You can use `IN NAMESPACE` with the entity and events APIs to restrict queries to a specified namespace.
+When omitted, `IN NAMESPACE` defaults to the `default` namespace.
+The data source provides support for querying from "all namespaces".
+For this purpose, the data source accepts `*` as namespace name resulting in querying all namespaces.
 
 For example, the following query returns hostnames containing the string `webserver` within the `default` namespace:
 
@@ -107,6 +110,19 @@ The following query returns all namespaces with names starting with `x`:
 ```
 QUERY API namespaces SELECT name WHERE name=~/^x/
 ```
+
+### Using Template Variables for Namespace Selection
+
+As already mentioned, the data source is able to fetch existing namespaces.
+For example, the following query returns all existing namespaces: `QUERY API namespaces SELECT name`
+
+This is useful in case a template variable should be used to dynamically switch between namespaces.
+
+Since data source version 1.1.0, it is also supported to query all namespaces at once using the data source's special namespace value `*`.
+If it is desired that all namespaces can be queried using a template variable, the variable's "All"-option must be adapted.
+This can be achieved by enabling the `Include All option` option and set the value of the `Custom all value` option to `*`.
+
+![API key configuration in the Sensu So Data Source](/images/all-namespaces-variable.png)
 
 ## Contributing
 
