@@ -1,6 +1,5 @@
 import _ from 'lodash';
-import AccessToken from './access_token';
-import QueryOptions from './query_options';
+import {AccessToken, QueryOptions} from '../types';
 
 /**
  * Class which encapsulates the query mechanism against the Sensu Go API.
@@ -28,8 +27,8 @@ export default class Sensu {
    * @param options the options specifying the query's request
    */
   static query(datasource: any, options: QueryOptions) {
-    const { method, url, namespace, limit, forceAccessTokenRefresh } = options;
-    const { useApiKey } = datasource.instanceSettings.jsonData;
+    const {method, url, namespace, limit, forceAccessTokenRefresh} = options;
+    const {useApiKey} = datasource.instanceSettings.jsonData;
 
     if (forceAccessTokenRefresh) {
       delete datasource.instanceSettings.tokens;
@@ -51,7 +50,7 @@ export default class Sensu {
       .catch((error) => {
         if (!useApiKey && !forceAccessTokenRefresh) {
           // in case api tokens (not api key) are used, try to refresh the token
-          Sensu.query(datasource, { ...options, forceAccessTokenRefresh: true });
+          Sensu.query(datasource, {...options, forceAccessTokenRefresh: true});
         } else {
           throw error;
         }
@@ -65,7 +64,10 @@ export default class Sensu {
    * @param datasource the datasource to use
    */
   static _authenticate(datasource: any) {
-    const { tokens, jsonData: { useApiKey } } = datasource.instanceSettings;
+    const {
+      tokens,
+      jsonData: {useApiKey},
+    } = datasource.instanceSettings;
 
     // never aquire token in case of api key auth
     if (useApiKey) {
@@ -102,7 +104,7 @@ export default class Sensu {
    * @param datasource the datasource to use
    */
   static _acquireAccessToken(datasource: any) {
-    return Sensu._request(datasource, 'GET', '/auth').then(result => {
+    return Sensu._request(datasource, 'GET', '/auth').then((result) => {
       let tokens: AccessToken = result.data;
 
       let timestampNow: number = Math.floor(Date.now() / 1000);
@@ -122,10 +124,10 @@ export default class Sensu {
    * @param url the url to send the request to
    */
   static _request(datasource: any, method: string, url: string) {
-    const { useApiKey } = datasource.instanceSettings.jsonData;
+    const {useApiKey} = datasource.instanceSettings.jsonData;
 
     const req: any = {
-      method: method
+      method: method,
     };
 
     req.headers = {
@@ -159,7 +161,7 @@ export default class Sensu {
   static _handleRequestResult(result: any) {
     if (result) {
       if (Array.isArray(result.data)) {
-        result.data.forEach(o => {
+        result.data.forEach((o) => {
           if (o.timestamp) {
             o.timestamp = o.timestamp * 1000;
           }

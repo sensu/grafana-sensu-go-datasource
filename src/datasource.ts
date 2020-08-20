@@ -1,21 +1,16 @@
 import _ from 'lodash';
 
 import sensu from './sensu/sensu';
-import SensuQueryOptions from './sensu/query_options';
 import { API_ENDPOINTS, DEFAULT_LIMIT, DEFAULT_AGGREGATION_LIMIT } from './constants';
 import FieldSelector from './FieldSelector';
 import FilterUtils from './utils/datasource_filter_util';
 import QueryUtils from './utils/query_util';
+import transformer from './transformer';
 
-import PreparedTarget from './model/PreparedTarget';
-import ColumnMapping from './model/ColumnMapping';
-import DataPoint from './model/DataPoint';
-import Filter from './model/Filter';
-import QueryComponents from './model/QueryComponents';
-import InstanceSettings from './model/InstanceSettings';
+import { PreparedTarget, ColumnMapping, DataPoint, Filter, QueryComponents, InstanceSettings, QueryOptions } from './types';
 
 export default class SensuDatasource {
-  
+
   url: string;
 
   /** @ngInject */
@@ -119,7 +114,7 @@ export default class SensuDatasource {
         }
       }
 
-      const queryOptions: SensuQueryOptions = {
+      const queryOptions: QueryOptions = {
         method: 'GET',
         url: apiUrl,
         namespace: namespace,
@@ -144,8 +139,8 @@ export default class SensuDatasource {
     return Promise.all(queries).then((queryResults: any) => {
       if (options.resultAsPlainArray) {
         // return only values - e.g. for template variables
-        return _(queryResults)
-          .map(result => this._transformToTable(result))
+        const result = _(queryResults)
+          .map(result => transformer.toTable(result))
           .map(result => result.rows)
           .flatten()
           .flatten()
@@ -153,16 +148,18 @@ export default class SensuDatasource {
             return { text: value };
           })
           .value();
+
+        return result;
       } else {
         const resultDataList: any[] = _.flatMap(queryResults, (queryResult, index) => {
           const { target: { format } } = queryTargets[index];
 
           if (format === 'series') {
             // return time series format
-            return this._transformToSeries(queryResult);
+            return transformer.toTimeSeries(queryResult);
           } else {
             // return table format
-            return this._transformToTable(queryResult);
+            return transformer.toTable(queryResult);
           }
         });
 
@@ -237,72 +234,6 @@ export default class SensuDatasource {
     });
 
     return resultData;
-  };
-
-  /**
-   * Transforms the given data into a time series representation.
-   */
-  _transformToSeries = (dataMatrix: DataPoint[]) => {
-    const now: number = Date.now();
-
-    // maps the data to a series - skips all values which are not finite
-    // - name => series name
-    // - value => value
-    return _(dataMatrix)
-      .flatten()
-      .filter(data => _.isFinite(data.value))
-      .map(data => {
-        return {
-          target: data.name,
-          datapoints: [[data.value, now]],
-        };
-      })
-      .value();
-  };
-
-  /**
-   * Transforms the given data into a table representation.
-   */
-  _transformToTable = (dataMatrix: DataPoint[]) => {
-    // extract existing columns
-    let columns: any[] = _(dataMatrix)
-      .flatten()
-      .map(cMap => cMap.name)
-      .uniq()
-      .map(name => {
-        return {
-          text: name,
-        };
-      })
-      .value();
-
-    // create column index mapping
-    const columnIndexMap = {};
-    _.each(columns, (column, index) => (columnIndexMap[column.text] = index));
-
-    // generate data rows
-    let rows: any[] = _.map(dataMatrix, dataRow => {
-      const row = _.times(columns.length, _.constant(null));
-
-      _.each(dataRow, dataPoint => {
-        let value: any = dataPoint.value;
-
-        if (_.isPlainObject(value) || _.isArray(value)) {
-          value = JSON.stringify(value);
-        }
-
-        row[columnIndexMap[dataPoint.name]] = value;
-      });
-
-      return row;
-    });
-
-    // create grafana result object
-    return {
-      columns: columns,
-      rows: rows,
-      type: 'table',
-    };
   };
 
   /**

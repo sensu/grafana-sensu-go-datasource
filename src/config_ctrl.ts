@@ -1,4 +1,4 @@
-import InstanceSettings from './model/InstanceSettings';
+import { InstanceSettings } from './types';
 
 /**
  * Controller responsible for the configuration ui.

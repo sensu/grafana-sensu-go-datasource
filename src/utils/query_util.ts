@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import { DEFAULT_LIMIT, DEFAULT_AGGREGATION_LIMIT } from '../constants';
 
-import QueryComponents from '../model/QueryComponents';
+import { QueryComponents } from '../types';
 
 const QUERY_FULL_REG_EXP = /QUERY\s+API\s+(entity|events|namespaces)\s+(IN\s+NAMESPACE\s+(\S+)\s+)?SELECT\s+(\S+)(\s+WHERE\s+(\S+\s*(=~?|!=|>|<|!=)\s*\S+(\s+AND\s+\S+\s*(=~?|!=|>|<|!=)\s*\S+)*))?(\s+LIMIT\s+(\d+))?/;
 const QUERY_SINGLE_FILTER_REG_EXP = /(\S+)\s*(=~?|!=|>|<|!~)\s*(\S+)/g;
@@ -136,7 +136,7 @@ export const extractQueryComponents = (query: string) => {
 
   if (matchResult[6] !== undefined) {
     const filters = Array.from(
-      (<any>matchResult[6]).matchAll(QUERY_SINGLE_FILTER_REG_EXP)
+      <string[]>(<any>matchResult[6]).matchAll(QUERY_SINGLE_FILTER_REG_EXP)
     );
 
     if (filters !== null) {

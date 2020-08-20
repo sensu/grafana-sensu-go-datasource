@@ -16,7 +16,7 @@ export default class FieldSelector {
    */
   static restore = (ctrl: SensuQueryCtrl, segments: any) => {
     const path = _(segments.fieldSegments)
-      .map(segment => segment.value)
+      .map((segment) => segment.value)
       .join('.');
 
     const selector: FieldSelector = new FieldSelector(ctrl, path);
@@ -27,7 +27,7 @@ export default class FieldSelector {
   };
 
   constructor(ctrl: SensuQueryCtrl, initPath: string) {
-    this.fieldSegments = _.map(initPath.split('.'), path =>
+    this.fieldSegments = _.map(initPath.split('.'), (path) =>
       ctrl.uiSegmentSrv.newKey(path)
     );
     this.refresh(ctrl);
@@ -76,7 +76,7 @@ export default class FieldSelector {
    */
   getPath = () => {
     return _(this.fieldSegments)
-      .map(segment => segment.value)
+      .map((segment) => segment.value)
       .join('.');
   };
 }
