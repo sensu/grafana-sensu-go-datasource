@@ -169,7 +169,14 @@ export class SensuQueryCtrl extends QueryCtrl {
       .then(result => {
         const namespaceArray = _.get(result, 'data', []);
         const namespaces = _.map(namespaceArray, namespace => namespace.name);
+
+        // add all option
         namespaces.unshift('*');
+
+        // add template variables
+        _.each(this.templateSrv.variables, variable =>
+          namespaces.unshift('$' + variable.name)
+        );
 
         return _.map(namespaces, option => this.uiSegmentSrv.newSegment({value: option}));
       })
