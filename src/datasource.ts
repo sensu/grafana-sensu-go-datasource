@@ -1,20 +1,36 @@
 import _ from 'lodash';
 
 import sensu from './sensu/sensu';
-import { API_ENDPOINTS, DEFAULT_LIMIT, DEFAULT_AGGREGATION_LIMIT } from './constants';
+import {
+  API_ENDPOINTS,
+  DEFAULT_LIMIT,
+  DEFAULT_AGGREGATION_LIMIT,
+  TIME_PROPERTIES,
+} from './constants';
 import FieldSelector from './FieldSelector';
 import FilterUtils from './utils/datasource_filter_util';
 import QueryUtils from './utils/query_util';
 import transformer from './transformer';
 
-import { PreparedTarget, ColumnMapping, DataPoint, Filter, QueryComponents, InstanceSettings, QueryOptions } from './types';
+import {
+  PreparedTarget,
+  ColumnMapping,
+  DataPoint,
+  Filter,
+  QueryComponents,
+  InstanceSettings,
+  QueryOptions,
+} from './types';
 
 export default class SensuDatasource {
-
   url: string;
 
   /** @ngInject */
-  constructor(public instanceSettings: InstanceSettings, public backendSrv, private templateSrv) {
+  constructor(
+    public instanceSettings: InstanceSettings,
+    public backendSrv,
+    private templateSrv
+  ) {
     this.url = instanceSettings.url.trim();
   }
 
@@ -49,7 +65,7 @@ export default class SensuDatasource {
    * Returns the url of the API used by the given target.
    */
   _getApiUrl = target => {
-    const apiEndpoint: any = _.find(API_ENDPOINTS, { value: target.apiEndpoints });
+    const apiEndpoint: any = _.find(API_ENDPOINTS, {value: target.apiEndpoints});
     if (apiEndpoint) {
       return apiEndpoint.url;
     } else {
@@ -94,14 +110,14 @@ export default class SensuDatasource {
     );
 
     if (queryTargets.length === 0) {
-      return Promise.resolve({ data: [] });
+      return Promise.resolve({data: []});
     }
 
     const queries = queryTargets.map(prepTarget => {
       const {
         apiUrl,
         filters,
-        target: { queryType, fieldSelectors, namespace, limit },
+        target: {queryType, fieldSelectors, namespace, limit},
       } = prepTarget;
 
       // verify and set correct limit
@@ -124,6 +140,7 @@ export default class SensuDatasource {
       return sensu
         .query(this, queryOptions)
         .then(requestResult => requestResult.data)
+        .then(this._timeCorrection)
         .then(data => this._filterData(data, filters))
         .then(data => {
           if (queryType === 'field') {
@@ -145,14 +162,14 @@ export default class SensuDatasource {
           .flatten()
           .flatten()
           .map(value => {
-            return { text: value };
+            return {text: value};
           })
           .value();
 
         return result;
       } else {
         const resultDataList: any[] = _.flatMap(queryResults, (queryResult, index) => {
-          const { target: { format } } = queryTargets[index];
+          const {target: {format}} = queryTargets[index];
 
           if (format === 'series') {
             // return time series format
@@ -171,11 +188,33 @@ export default class SensuDatasource {
   }
 
   /**
+   * Converting the timestamps from seconds to miliseconds because Sensu's timestamp
+   * resolution is in seconds but Grafana uses miliseconds.
+   */
+  _timeCorrection = (data: any) => {
+    _.each(data, dataElement => {
+      // iterate over all time properties
+      _.each(TIME_PROPERTIES, property => {
+        // fetch the properties value
+        const time = _.get(dataElement, property, -1);
+        // in case a time is set, we multiply them by 1000 to get miliseconds.
+        // in case the time is 0, we'll remove it, otherwise Grafana will display the epoch's starting times
+        if (time > 0) {
+          _.set(dataElement, property, time * 1000);
+        } else {
+          _.unset(dataElement, property);
+        }
+      });
+    });
+    return data;
+  };
+
+  /**
    * Process the data if the query type is 'aggregation'.
    */
   _queryAggregation = (data: any[], prepTarget: PreparedTarget) => {
     const {
-      target: { aggregationAlias: alias, aggregationType: type, aggregationField: field },
+      target: {aggregationAlias: alias, aggregationType: type, aggregationField: field},
     } = prepTarget;
     const name = alias ? alias : type;
 
@@ -376,7 +415,7 @@ export default class SensuDatasource {
    * Transforms the given query components into an options object which can be used by the `query(..)` function.
    */
   _transformQueryComponentsToQueryOptions = (queryComponents: QueryComponents) => {
-    const { apiKey, selectedField, filters, namespace, limit } = queryComponents;
+    const {apiKey, selectedField, filters, namespace, limit} = queryComponents;
 
     const filterObjects = _.map(filters, filter => {
       return [
@@ -420,7 +459,7 @@ export default class SensuDatasource {
    * Used by the config UI to test a datasource.
    */
   testDatasource() {
-    const { useApiKey } = this.instanceSettings.jsonData;
+    const {useApiKey} = this.instanceSettings.jsonData;
 
     // the /auth/test endpoint is only available for testing basic auth credentials
     const testUrl = useApiKey ? '/api/core/v2/namespaces' : '/auth/test';
@@ -435,9 +474,12 @@ export default class SensuDatasource {
       })
       .catch(error => {
         if (useApiKey && error.data === 'access_error') {
-          return { status: 'error', message: 'API Key Invalid: Could not logged in using API key' };
+          return {
+            status: 'error',
+            message: 'API Key Invalid: Could not logged in using API key',
+          };
         }
-        return { status: 'error', message: error.message };
+        return {status: 'error', message: error.message};
       });
   }
 }

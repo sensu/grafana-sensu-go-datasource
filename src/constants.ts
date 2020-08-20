@@ -74,3 +74,14 @@ export const FORMATS = <TextValue[]>[
     text: 'Time Series',
   },
 ];
+
+/**
+ * Properties containing a timestamp and should converted (from seconds to miliseconds).
+ */
+export const TIME_PROPERTIES: string[] = [
+  'timestamp',
+  'check.executed',
+  'check.issued',
+  'check.last_ok',
+  'entity.last_seen',
+];
