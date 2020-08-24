@@ -18,17 +18,44 @@ export default class Sensu {
    */
   static readonly apiBaseUrl = '/api/core/v2';
 
+  /**
+   * The data source route used for API key authentication. See also the plugin.json file.
+   */
   static readonly apiKeyUrlPrefix = '/api_key_auth';
+
+  /**
+   * Executes a query against the given datasource. An access token will be gathered if needed.
+   * For each namespace specified in the passed options, a separate query will be executed.
+   *
+   * @param datasource the datasource to use
+   * @param options the options specifying the query's request
+   */
+  static query(datasource: any, options: QueryOptions) {
+    const {namespaces} = options;
+
+    const queries = _.map(namespaces, namespace =>
+      this._doQuery(datasource, options, namespace)
+    );
+
+    return Promise.all(queries).then(data => {
+      return _.flatten(data);
+    });
+  }
 
   /**
    * Executes a query against the given datasource. An access token will be gathered if needed.
    *
    * @param datasource the datasource to use
    * @param options the options specifying the query's request
+   * @param namespace the namespace used by this query
    */
-  static query(datasource: any, options: QueryOptions) {
-    const {method, url, namespace, limit, forceAccessTokenRefresh} = options;
-    const {useApiKey} = datasource.instanceSettings.jsonData;
+  static _doQuery(
+    datasource: any,
+    options: QueryOptions,
+    namespace: string,
+    retryCount: number = 0
+  ) {
+    const {method, url, limit, forceAccessTokenRefresh} = options;
 
     if (forceAccessTokenRefresh) {
       delete datasource.instanceSettings.tokens;
@@ -48,13 +75,24 @@ export default class Sensu {
 
     return Sensu._authenticate(datasource)
       .then(() => Sensu._request(datasource, method, fullUrl))
+      .then(result => result.data)
       .catch(error => {
-        if (!useApiKey && !forceAccessTokenRefresh) {
-          // in case api tokens (not api key) are used, try to refresh the token
-          Sensu.query(datasource, {...options, forceAccessTokenRefresh: true});
-        } else {
+        // we'll retry once
+        if (retryCount >= 1) {
           throw error;
         }
+
+        // the token refresh is not called immediatly in order to prevent some race conditions
+        const delay = Math.floor(1000 + Math.random() * 1000);
+
+        return new Promise(resolve => setTimeout(resolve, delay)).then(() =>
+          this._doQuery(
+            datasource,
+            {...options, forceAccessTokenRefresh: true},
+            namespace,
+            retryCount + 1
+          )
+        );
       });
   }
 
@@ -65,14 +103,15 @@ export default class Sensu {
    * @param datasource the datasource to use
    */
   static _authenticate(datasource: any) {
-    const {tokens, jsonData: {useApiKey}} = datasource.instanceSettings;
+    const {tokens} = datasource.instanceSettings;
+    const useApiKey = _.get(datasource.instanceSettings, 'jsonData.useApiKey', false);
 
     // never aquire token in case of api key auth
     if (useApiKey) {
       return Promise.resolve(true);
     }
 
-    let acquireToken = !tokens || Sensu._isTokenExpired(tokens);
+    const acquireToken = !tokens || Sensu._isTokenExpired(tokens);
     if (acquireToken) {
       return Sensu._acquireAccessToken(datasource);
     } else {
@@ -122,7 +161,7 @@ export default class Sensu {
    * @param url the url to send the request to
    */
   static _request(datasource: any, method: string, url: string) {
-    const {useApiKey} = datasource.instanceSettings.jsonData;
+    const useApiKey = _.get(datasource.instanceSettings, 'jsonData.useApiKey', false);
 
     const req: any = {
       method: method,
@@ -136,7 +175,7 @@ export default class Sensu {
       // authentication via api key using authentication route
       req.url = datasource.url + Sensu.apiKeyUrlPrefix + url;
     } else {
-      // authetnication via bearer token
+      // authentication via bearer token
       req.url = datasource.url + url;
 
       if (_.has(datasource.instanceSettings, 'tokens')) {
