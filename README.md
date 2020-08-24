@@ -84,7 +84,7 @@ To learn more about building dashboards, see the [Grafana docs][9].
 
 The Sensu Go Data Source supports query strings with the structure:
 
-    QUERY API (entity|events|namespaces) [IN NAMESPACE (*|namespace)] SELECT (field-key) [WHERE (field-key)(=|!=|=~|!~|<|>)(field-value) [AND (field-key)(=|!=|=~|!~|<|>)(field-value)]] [LIMIT (limit)]
+    QUERY API (entity|events|namespaces) [IN NAMESPACE (namespace)[|(namespace)]] SELECT (field-key) [WHERE (field-key)(=|!=|=~|!~|<|>)(field-value) [AND (field-key)(=|!=|=~|!~|<|>)(field-value)]] [LIMIT (limit)]
 
 > Note: Query keywords are case sensitive.
 
@@ -93,7 +93,9 @@ When omitted, `IN NAMESPACE` defaults to the `default` namespace.
 The data source provides support for querying from "all namespaces".
 For this purpose, the data source accepts `*` as namespace name resulting in querying all namespaces.
 
-For example, the following query returns hostnames containing the string `webserver` within the `default` namespace:
+#### Query Examples
+
+The following query returns hostnames containing the string `webserver` within the `default` namespace:
 
 ```
 QUERY API entity SELECT system.hostname WHERE system.hostname=~/webserver/
@@ -111,6 +113,24 @@ The following query returns all namespaces with names starting with `x`:
 QUERY API namespaces SELECT name WHERE name=~/^x/
 ```
 
+The following query returns all entity names across all namespaces:
+
+```
+QUERY API entity IN NAMESPACE * SELECT metadata.name
+```
+
+The following query returns all entity names across all namespaces:
+
+```
+QUERY API entity IN NAMESPACE * SELECT metadata.name
+```
+
+The following query returns the total count of entities in the `default` and `other` namespace:
+
+```
+QUERY API entity IN NAMESPACE default|other AGGREGATE count
+```
+
 ### Using Template Variables for Namespace Selection
 
 As already mentioned, the data source is able to fetch existing namespaces.
@@ -118,7 +138,7 @@ For example, the following query returns all existing namespaces: `QUERY API nam
 
 This is useful in case a template variable should be used to dynamically switch between namespaces.
 
-Since data source version 1.1.0, it is also supported to query all namespaces at once using the data source's special namespace value `*`.
+Since data source version `1.1.0`, it is also supported to query all namespaces at once using the data source's special namespace value `*`.
 If it is desired that all namespaces can be queried using a template variable, the variable's "All"-option must be adapted.
 This can be achieved by enabling the `Include All option` option and set the value of the `Custom all value` option to `*`.
 

@@ -163,10 +163,11 @@ export class SensuQueryCtrl extends QueryCtrl {
     return Sensu.query(this.datasource, {
       method: 'GET',
       url: '/namespaces',
-      namespace: '',
+      namespaces: [],
       limit: 0,
     })
       .then(result => {
+        // get existing namespaces based on query result
         const namespaceArray = _.get(result, 'data', []);
         const namespaces = _.map(namespaceArray, namespace => namespace.name);
 

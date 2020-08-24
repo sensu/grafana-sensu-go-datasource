@@ -83,7 +83,7 @@ export interface TextValue {
 export interface QueryOptions {
   method: string;
   url: string;
-  namespace: string;
+  namespaces: string[];
   limit: number;
   forceAccessTokenRefresh?: boolean;
 }

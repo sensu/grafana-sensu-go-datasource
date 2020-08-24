@@ -37,11 +37,11 @@ export default class SensuDatasource {
   /**
    * Preprocces the query targets like resolving template variables.
    */
-  prepareQuery = (target, options) => {
+  prepareQuery = (target, queryOptions) => {
     // resolve API url
     const apiUrl = this._getApiUrl(target);
     // resolve filters
-    const filters = this._getFilters(target, options);
+    const filters = this._getFilters(target, queryOptions);
 
     const preparedTarget: PreparedTarget = <PreparedTarget>{
       apiUrl: apiUrl,
@@ -49,7 +49,7 @@ export default class SensuDatasource {
       target: _.cloneDeep(target), //ensure modifications are not globally propagated
     };
 
-    this._resolveTemplateVariables(preparedTarget, options);
+    this._resolveTargetTemplateVariables(preparedTarget.target, queryOptions);
 
     return preparedTarget;
   };
@@ -57,8 +57,12 @@ export default class SensuDatasource {
   /**
    * Resolves template variables in the given prepared target.
    */
-  _resolveTemplateVariables = (pTarget: PreparedTarget, options) => {
-    pTarget.target.namespace = this.templateSrv.replace(pTarget.target.namespace);
+  _resolveTargetTemplateVariables = (target: any, queryOptions) => {
+    const namespaces: string = this.templateSrv
+      .replace(target.namespace, queryOptions.scopedVars, 'pipe')
+      .split('|');
+
+    target.namespace = namespaces;
   };
 
   /**
@@ -95,20 +99,14 @@ export default class SensuDatasource {
   };
 
   /**
-   * Processes a given string and resolves template variable if any exists in it.
-   */
-  _resolveRegex = (value: string, options: any) => {
-    return this.templateSrv.replace(value, options.scopedVars, 'regex');
-  };
-
-  /**
    * Executes a query.
    */
-  query(options) {
-    const queryTargets = _.map(options.targets, target =>
-      this.prepareQuery(target, options)
+  query(queryOptions) {
+    const queryTargets = _.map(queryOptions.targets, target =>
+      this.prepareQuery(target, queryOptions)
     );
 
+    // empty result in case there is no query defined
     if (queryTargets.length === 0) {
       return Promise.resolve({data: []});
     }
@@ -133,34 +131,37 @@ export default class SensuDatasource {
       const queryOptions: QueryOptions = {
         method: 'GET',
         url: apiUrl,
-        namespace: namespace,
+        namespaces: namespace,
         limit: parsedLimit,
       };
 
-      return sensu
-        .query(this, queryOptions)
-        .then(requestResult => requestResult.data)
-        .then(this._timeCorrection)
-        .then(data => this._filterData(data, filters))
-        .then(data => {
-          if (queryType === 'field') {
-            return this._queryFieldSelection(data, fieldSelectors);
-          } else if (queryType === 'aggregation') {
-            return this._queryAggregation(data, prepTarget);
-          } else {
-            return [];
-          }
-        });
+      return (
+        sensu
+          .query(this, queryOptions)
+          //.then((requestResult) => requestResult.data)
+          .then(this._timeCorrection)
+          .then(data => this._filterData(data, filters))
+          .then(data => {
+            if (queryType === 'field') {
+              return this._queryFieldSelection(data, fieldSelectors);
+            } else if (queryType === 'aggregation') {
+              return this._queryAggregation(data, prepTarget);
+            } else {
+              return [];
+            }
+          })
+      );
     });
 
     return Promise.all(queries).then((queryResults: any) => {
-      if (options.resultAsPlainArray) {
+      if (queryOptions.resultAsPlainArray) {
         // return only values - e.g. for template variables
         const result = _(queryResults)
           .map(result => transformer.toTable(result))
           .map(result => result.rows)
           .flatten()
           .flatten()
+          .filter()
           .map(value => {
             return {text: value};
           })
@@ -392,7 +393,7 @@ export default class SensuDatasource {
   /**
    * Executes a query based on the given query command which is a string representation of it.
    */
-  metricFindQuery(query: string, options?: any) {
+  metricFindQuery(query: string, queryOptions?: any) {
     return this._query(query);
   }
 
@@ -459,7 +460,7 @@ export default class SensuDatasource {
    * Used by the config UI to test a datasource.
    */
   testDatasource() {
-    const {useApiKey} = this.instanceSettings.jsonData;
+    const useApiKey = _.get(this.instanceSettings, 'jsonData.useApiKey', false);
 
     // the /auth/test endpoint is only available for testing basic auth credentials
     const testUrl = useApiKey ? '/api/core/v2/namespaces' : '/auth/test';
