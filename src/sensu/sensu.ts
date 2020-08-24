@@ -8,7 +8,7 @@ export default class Sensu {
   /**
    * The max duration a token is valid in seconds.
    */
-  static readonly tokenTimeout_s = 900;
+  static readonly tokenTimeout_s = 600;
   /**
    * This duration will be susbtracted of the `tokenTimeout_s` duration.
    */
