@@ -55,11 +55,7 @@ export default class Sensu {
     namespace: string,
     retryCount: number = 0
   ) {
-    const {method, url, limit, forceAccessTokenRefresh} = options;
-
-    if (forceAccessTokenRefresh) {
-      delete datasource.instanceSettings.tokens;
-    }
+    const {method, url, limit} = options;
 
     let fullUrl: string;
     if (url === '/namespaces') {
@@ -82,16 +78,14 @@ export default class Sensu {
           throw error;
         }
 
-        // the token refresh is not called immediatly in order to prevent some race conditions
+        // delete token details in order to refresh the token in case of basic auth
+        delete datasource.instanceSettings.tokens;
+
+        // the retry is not immediatly done in order to prevent some race conditions
         const delay = Math.floor(1000 + Math.random() * 1000);
 
         return new Promise(resolve => setTimeout(resolve, delay)).then(() =>
-          this._doQuery(
-            datasource,
-            {...options, forceAccessTokenRefresh: true},
-            namespace,
-            retryCount + 1
-          )
+          this._doQuery(datasource, options, namespace, retryCount + 1)
         );
       });
   }
