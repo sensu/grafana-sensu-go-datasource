@@ -20,10 +20,21 @@ export interface DataPoint {
   readonly name: string;
 }
 
-export interface Filter {
-  readonly key: string;
-  readonly value: string;
-  readonly matcher: string;
+export interface BaseFilter {
+  key: string;
+  value: string;
+  matcher: string;
+}
+
+export interface ClientSideFilter extends BaseFilter {}
+
+export interface ServerSideFilter extends BaseFilter {
+  type: ServerSideFilterType;
+}
+
+export enum ServerSideFilterType {
+  FIELD = 0,
+  LABEL = 1,
 }
 
 export interface InstanceSettings {
@@ -63,7 +74,8 @@ export interface SecureJsonFields {
 
 export interface PreparedTarget {
   readonly apiUrl: string;
-  readonly filters: Filter[];
+  readonly clientFilters: ClientSideFilter[];
+  readonly serverFilters: ServerSideFilter[];
   readonly target: any;
 }
 
@@ -71,7 +83,7 @@ export interface QueryComponents {
   readonly apiKey: string;
   readonly namespace: string;
   readonly selectedField: string;
-  readonly filters: Filter[];
+  readonly filters: ClientSideFilter[];
   readonly limit: number;
 }
 
@@ -93,4 +105,15 @@ export interface AccessToken {
   readonly expires_at: number;
   readonly refresh_token: string;
   expires_offset?: number;
+}
+
+export interface GrafanaTarget {
+  /** @deprecated */
+  filterSegments: any[];
+
+  namespace: string;
+
+  version: number;
+  clientSideFilters: ClientSideFilter[];
+  serverSideFilters: ServerSideFilter[];
 }

@@ -11,15 +11,17 @@ import FieldSelector from './FieldSelector';
 import FilterUtils from './utils/datasource_filter_util';
 import QueryUtils from './utils/query_util';
 import transformer from './transformer';
+import ConfigMigration from './utils/config_migration_util';
 
 import {
   PreparedTarget,
   ColumnMapping,
   DataPoint,
-  Filter,
+  ClientSideFilter,
   QueryComponents,
   InstanceSettings,
   QueryOptions,
+  GrafanaTarget,
 } from './types';
 
 export default class SensuDatasource {
@@ -37,19 +39,19 @@ export default class SensuDatasource {
   /**
    * Preprocces the query targets like resolving template variables.
    */
-  prepareQuery = (target, queryOptions) => {
+  prepareQuery = (target: GrafanaTarget, queryOptions) => {
     // resolve API url
     const apiUrl = this._getApiUrl(target);
     // resolve filters
-    const filters = this._getFilters(target, queryOptions);
+    const clientFilters = _.cloneDeep(target.clientSideFilters);
 
     const preparedTarget: PreparedTarget = <PreparedTarget>{
-      apiUrl: apiUrl,
-      filters: filters,
+      apiUrl,
+      clientFilters,
       target: _.cloneDeep(target), //ensure modifications are not globally propagated
     };
 
-    this._resolveTargetTemplateVariables(preparedTarget.target, queryOptions);
+    this._resolveTemplateVariables(preparedTarget, queryOptions);
 
     return preparedTarget;
   };
@@ -57,18 +59,31 @@ export default class SensuDatasource {
   /**
    * Resolves template variables in the given prepared target.
    */
-  _resolveTargetTemplateVariables = (target: any, queryOptions) => {
+  _resolveTemplateVariables = (preparedTarget: PreparedTarget, queryOptions) => {
+    const {target, clientFilters} = preparedTarget;
+
+    // resolve variables in namespaces
     const namespaces: string = this.templateSrv
       .replace(target.namespace, queryOptions.scopedVars, 'pipe')
       .split('|');
 
     target.namespace = namespaces;
+
+    // resolve variables in filters
+    clientFilters.forEach((filter) => {
+      filter.key = this.templateSrv.replace(filter.key, queryOptions.scopedVars, 'csv');
+      filter.value = this.templateSrv.replace(
+        filter.value,
+        queryOptions.scopedVars,
+        'regex'
+      );
+    });
   };
 
   /**
    * Returns the url of the API used by the given target.
    */
-  _getApiUrl = target => {
+  _getApiUrl = (target) => {
     const apiEndpoint: any = _.find(API_ENDPOINTS, {value: target.apiEndpoints});
     if (apiEndpoint) {
       return apiEndpoint.url;
@@ -78,43 +93,23 @@ export default class SensuDatasource {
   };
 
   /**
-   * Returns an array of processed filters and resolved variables.
-   */
-  _getFilters = (target, options) => {
-    return _(target.filterSegments)
-      .filter(segmentArray => segmentArray.length === 3)
-      .filter(segmentArray => !segmentArray[2].fake)
-      .map(segmentArray => {
-        return <Filter>{
-          key: this.templateSrv.replace(segmentArray[0].value, options.scopedVars, 'csv'),
-          matcher: segmentArray[1].value,
-          value: this.templateSrv.replace(
-            segmentArray[2].value,
-            options.scopedVars,
-            'regex'
-          ),
-        };
-      })
-      .value();
-  };
-
-  /**
    * Executes a query.
    */
   query(queryOptions) {
-    const queryTargets = _.map(queryOptions.targets, target =>
-      this.prepareQuery(target, queryOptions)
-    );
+    const queryTargets = _(queryOptions.targets)
+      .map(ConfigMigration.migrate)
+      .map((target) => this.prepareQuery(target, queryOptions))
+      .value();
 
     // empty result in case there is no query defined
     if (queryTargets.length === 0) {
       return Promise.resolve({data: []});
     }
 
-    const queries = queryTargets.map(prepTarget => {
+    const queries = queryTargets.map((prepTarget) => {
       const {
         apiUrl,
-        filters,
+        clientFilters,
         target: {queryType, fieldSelectors, namespace, limit},
       } = prepTarget;
 
@@ -140,8 +135,8 @@ export default class SensuDatasource {
           .query(this, queryOptions)
           //.then((requestResult) => requestResult.data)
           .then(this._timeCorrection)
-          .then(data => this._filterData(data, filters))
-          .then(data => {
+          .then((data) => this._filterData(data, clientFilters))
+          .then((data) => {
             if (queryType === 'field') {
               return this._queryFieldSelection(data, fieldSelectors);
             } else if (queryType === 'aggregation') {
@@ -157,12 +152,12 @@ export default class SensuDatasource {
       if (queryOptions.resultAsPlainArray) {
         // return only values - e.g. for template variables
         const result = _(queryResults)
-          .map(result => transformer.toTable(result))
-          .map(result => result.rows)
+          .map((result) => transformer.toTable(result))
+          .map((result) => result.rows)
           .flatten()
           .flatten()
           .filter()
-          .map(value => {
+          .map((value) => {
             return {text: value};
           })
           .value();
@@ -170,7 +165,9 @@ export default class SensuDatasource {
         return result;
       } else {
         const resultDataList: any[] = _.flatMap(queryResults, (queryResult, index) => {
-          const {target: {format}} = queryTargets[index];
+          const {
+            target: {format},
+          } = queryTargets[index];
 
           if (format === 'series') {
             // return time series format
@@ -193,9 +190,9 @@ export default class SensuDatasource {
    * resolution is in seconds but Grafana uses miliseconds.
    */
   _timeCorrection = (data: any) => {
-    _.each(data, dataElement => {
+    _.each(data, (dataElement) => {
       // iterate over all time properties
-      _.each(TIME_PROPERTIES, property => {
+      _.each(TIME_PROPERTIES, (property) => {
         // fetch the properties value
         const time = _.get(dataElement, property, -1);
         // in case a time is set, we multiply them by 1000 to get miliseconds.
@@ -261,9 +258,9 @@ export default class SensuDatasource {
       fieldSelectors
     );
 
-    const resultData = _.map(data, dataElement => {
+    const resultData = _.map(data, (dataElement) => {
       // extract selected data
-      return _.map(columnMappings, mapping => {
+      return _.map(columnMappings, (mapping) => {
         const value: any = _.get(dataElement, mapping.path);
 
         return <DataPoint>{
@@ -280,9 +277,9 @@ export default class SensuDatasource {
    * Creates a column mapping - which object attribute/path is related to which column.
    */
   _extractColumnMappings = (data: any, fieldSelectors: FieldSelector[]) => {
-    const result: ColumnMapping[] = _.flatMap(fieldSelectors, selector => {
+    const result: ColumnMapping[] = _.flatMap(fieldSelectors, (selector) => {
       const paths = _(data)
-        .map(dataElement => this.resolvePaths(selector, dataElement))
+        .map((dataElement) => this.resolvePaths(selector, dataElement))
         .flatMap()
         .uniq()
         .value();
@@ -298,7 +295,7 @@ export default class SensuDatasource {
           });
         } else {
           // use the alias instead the path as column name
-          return _.map(paths, path => {
+          return _.map(paths, (path) => {
             return <ColumnMapping>{
               path: path,
               alias: selector.alias,
@@ -307,7 +304,7 @@ export default class SensuDatasource {
         }
       } else {
         // use the path itself as column name
-        return _.map(paths, path => {
+        return _.map(paths, (path) => {
           return <ColumnMapping>{
             path: path,
             alias: path,
@@ -322,16 +319,16 @@ export default class SensuDatasource {
   /**
    * Returns a filtered representation of the given data.
    */
-  _filterData = (data: any, filters: Filter[]) => {
-    return _.filter(data, dataElement =>
-      _.every(filters, filter => this._matches(dataElement, filter))
+  _filterData = (data: any, filters: ClientSideFilter[]) => {
+    return _.filter(data, (dataElement) =>
+      _.every(filters, (filter) => this._matches(dataElement, filter))
     );
   };
 
   /**
    * Returns whether the given element matches the given filter.
    */
-  _matches = (element: any, filter: Filter) => {
+  _matches = (element: any, filter: ClientSideFilter) => {
     const filterKey: string = filter.key;
     const matcher: string = filter.matcher;
     const filterValue: string = filter.value;
@@ -369,19 +366,19 @@ export default class SensuDatasource {
       if (basePath === '') {
         return paths;
       } else {
-        return _.map(paths, path => basePath + '.' + path);
+        return _.map(paths, (path) => basePath + '.' + path);
       }
     } else {
       return [basePath];
     }
   };
 
-  _deepResolve = data => {
+  _deepResolve = (data) => {
     let keys: string[] = Object.keys(data);
 
-    return _.flatMap(keys, key => {
+    return _.flatMap(keys, (key) => {
       if (_.isPlainObject(data[key])) {
-        return _.map(this._deepResolve(data[key]), nestedKeys => {
+        return _.map(this._deepResolve(data[key]), (nestedKeys) => {
           return key + '.' + nestedKeys;
         });
       } else {
@@ -418,7 +415,7 @@ export default class SensuDatasource {
   _transformQueryComponentsToQueryOptions = (queryComponents: QueryComponents) => {
     const {apiKey, selectedField, filters, namespace, limit} = queryComponents;
 
-    const filterObjects = _.map(filters, filter => {
+    const filterObjects = _.map(filters, (filter) => {
       return [
         {
           value: filter.key,
@@ -473,7 +470,7 @@ export default class SensuDatasource {
           message: 'Successfully connected against the Sensu Go API',
         };
       })
-      .catch(error => {
+      .catch((error) => {
         if (useApiKey && error.data === 'access_error') {
           return {
             status: 'error',
