@@ -1,3 +1,5 @@
+import FieldSelector from './FieldSelector';
+
 export interface AggregationType {
   readonly value: string;
   readonly text: string;
@@ -8,6 +10,7 @@ export interface ApiEndpoint {
   readonly text: string;
   readonly value: string;
   readonly url: string;
+  readonly fieldSelectors: string[];
 }
 
 export interface ColumnMapping {
@@ -110,8 +113,18 @@ export interface AccessToken {
 export interface GrafanaTarget {
   /** @deprecated */
   filterSegments: any[];
+  /** @deprecated */
+  aggregation?: string;
 
+  aggregationAlias?: string;
+  aggregationField?: string;
+  aggregationRequiresTarget: boolean;
+  aggregationType?: string;
+  apiEndpoints: string;
+  fieldSelectors: FieldSelector[];
+  format: string;
   namespace: string;
+  queryType: string;
 
   version: number;
   clientSideFilters: ClientSideFilter[];

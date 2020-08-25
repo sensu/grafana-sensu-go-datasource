@@ -7,7 +7,7 @@ import _ from 'lodash';
  * @param dataValue the data value to test
  */
 export const matchs = (filterValue: string, operator: string, dataValue: any) => {
-  if (operator === '=') {
+  if (operator === '==') {
     return filterValue == dataValue;
   }
   if (operator === '!=') {

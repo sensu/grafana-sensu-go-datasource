@@ -8,6 +8,8 @@ import {
   TextValue,
   GrafanaTarget,
   ClientSideFilter,
+  ServerSideFilter,
+  ServerSideFilterType,
 } from './types';
 
 import FieldSelector from './FieldSelector';
@@ -19,6 +21,9 @@ import ConfigMigration from './utils/config_migration_util';
 export class SensuQueryCtrl extends QueryCtrl {
   static templateUrl = 'partials/query.editor.html';
 
+  // Will be stored by Grafana
+  target: GrafanaTarget;
+
   // Constants
   readonly aggregationTypes: AggregationType[] = AGGREGATION_TYPES;
   readonly queryTypes: TextValue[] = QUERY_TYPES;
@@ -27,10 +32,12 @@ export class SensuQueryCtrl extends QueryCtrl {
   segmentAggregationTarget: any;
   dataPreview: any;
 
-  apiEndpoints: ApiEndpoint[] = API_ENDPOINTS;
+  apiEndpoints: ApiEndpoint[] = API_ENDPOINTS; // used in the partial
   addFieldSegment: any;
-  filterSegments: any[] = [];
   namespaceSegment: any;
+
+  clientFilterSegments: any[] = [];
+  serverFilterSegments: any[] = [];
 
   /** @ngInject **/
   constructor($scope, $injector, private $q, public uiSegmentSrv, private templateSrv) {
@@ -39,20 +46,27 @@ export class SensuQueryCtrl extends QueryCtrl {
     // Migrate existing configurations to the latest model version
     ConfigMigration.migrate(this.target);
 
-    const {clientSideFilters} = <GrafanaTarget>this.target;
+    const {clientSideFilters, serverSideFilters} = <GrafanaTarget>this.target;
 
-    // restore filter segments
+    // restore client filter segments
     _(clientSideFilters)
       .map(this._createClientFilterSegments)
-      .each((segmentArray) => this.filterSegments.push(segmentArray));
+      .each(segmentArray => this.clientFilterSegments.push(segmentArray));
 
-    this.filterSegments.push([this.uiSegmentSrv.newPlusButton()]);
+    this.clientFilterSegments.push([this.uiSegmentSrv.newPlusButton()]);
+
+    //restore server filter segments
+    _(serverSideFilters)
+      .map(this._createServerFilterSegments)
+      .each(segmentArray => this.serverFilterSegments.push(segmentArray));
+
+    this.serverFilterSegments.push([this.uiSegmentSrv.newPlusButton()]);
 
     // create field selectors
     if (this.target.fieldSelectors === undefined) {
       this.target.fieldSelectors = [new FieldSelector(this, '*')];
     } else {
-      this.target.fieldSelectors = _.map(this.target.fieldSelectors, (selector) =>
+      this.target.fieldSelectors = _.map(this.target.fieldSelectors, selector =>
         FieldSelector.restore(this, selector)
       );
     }
@@ -118,6 +132,20 @@ export class SensuQueryCtrl extends QueryCtrl {
     return segmentArray;
   };
 
+  _createServerFilterSegments = (filter: ServerSideFilter) => {
+    const type =
+      filter.type === ServerSideFilterType.FIELD ? 'fieldSelector' : 'labelSelector';
+
+    let segmentArray = [
+      this.uiSegmentSrv.newCondition(type),
+      this.uiSegmentSrv.newKey(filter.key),
+      this.uiSegmentSrv.newOperator(filter.matcher),
+      this.uiSegmentSrv.newKeyValue(filter.value),
+    ];
+
+    return segmentArray;
+  };
+
   /**
    * Returns the currently selected aggregation type.
    */
@@ -139,7 +167,6 @@ export class SensuQueryCtrl extends QueryCtrl {
    * Called if the aggregation type changes.
    */
   onAggregationTypeChange = () => {
-    console.log('aggregation', this.target.aggregationType);
     this.target.aggregationRequiresTarget = this.getCurrentAggregationType().requiresTarget;
     this._resetAggregation();
     this.panelCtrl.refresh();
@@ -164,7 +191,7 @@ export class SensuQueryCtrl extends QueryCtrl {
    */
   getTargetOptions = () => {
     const options: string[] = this.getAllDeepKeys();
-    const segments: any[] = _.map(options, (option) =>
+    const segments: any[] = _.map(options, option =>
       this.uiSegmentSrv.newSegment({value: option})
     );
 
@@ -181,22 +208,20 @@ export class SensuQueryCtrl extends QueryCtrl {
       namespaces: [],
       limit: 0,
     })
-      .then((result) => {
+      .then(result => {
         // get existing namespaces based on query result
         const namespaceArray = _.get(result, 'data', []);
-        const namespaces = _.map(namespaceArray, (namespace) => namespace.name);
+        const namespaces = _.map(namespaceArray, namespace => namespace.name);
 
         // add all option
         namespaces.unshift('*');
 
         // add template variables
-        _.each(this.templateSrv.variables, (variable) =>
+        _.each(this.templateSrv.variables, variable =>
           namespaces.unshift('$' + variable.name)
         );
 
-        return _.map(namespaces, (option) =>
-          this.uiSegmentSrv.newSegment({value: option})
-        );
+        return _.map(namespaces, option => this.uiSegmentSrv.newSegment({value: option}));
       })
       .catch(() => {
         return [];
@@ -216,7 +241,8 @@ export class SensuQueryCtrl extends QueryCtrl {
    */
   _reset = () => {
     this.target.fieldSelectors = [new FieldSelector(this, '*')];
-    this.filterSegments = [[this.uiSegmentSrv.newPlusButton()]];
+    this.clientFilterSegments = [[this.uiSegmentSrv.newPlusButton()]];
+    this.serverFilterSegments = [[this.uiSegmentSrv.newPlusButton()]];
     this._updateFilterTarget();
   };
 
@@ -231,8 +257,11 @@ export class SensuQueryCtrl extends QueryCtrl {
   /**
    * Removes the filter at the given index.
    */
-  removeFilter = (index) => {
-    this.filterSegments.splice(index, 1);
+  removeFilter = (index: number, isServerFilter: boolean) => {
+    const targetArray = isServerFilter
+      ? this.serverFilterSegments
+      : this.clientFilterSegments;
+    targetArray.splice(index, 1);
     this._updateFilterTarget();
     this.panelCtrl.refresh();
   };
@@ -242,38 +271,57 @@ export class SensuQueryCtrl extends QueryCtrl {
    */
   onFilterSegmentUpdate = (segment, parentIndex, index) => {
     if (segment.type === 'plus-button') {
-      this._addFilterSegment(segment);
+      this._addClientFilterSegment(segment);
       return;
     }
 
     if (index == 2) {
       const segmentValue = segment.value;
       if (/\/.*\/\w*/.test(segmentValue)) {
-        this.filterSegments[parentIndex][1] = this.uiSegmentSrv.newOperator('=~');
+        this.clientFilterSegments[parentIndex][1] = this.uiSegmentSrv.newOperator('=~');
       }
     }
 
     this._updateFilterTarget();
-
-    this.target.test2 = Math.random();
-
     this.panelCtrl.refresh();
   };
 
   /**
    * Adds a new filter.
    */
-  _addFilterSegment = (sourceSegment: any) => {
-    this.filterSegments.pop();
-
-    let segmentArray = [
+  _addClientFilterSegment = (sourceSegment: any) => {
+    const segmentArray: any[] = [
       this.uiSegmentSrv.newKey(sourceSegment.value),
-      this.uiSegmentSrv.newOperator('='),
+      this.uiSegmentSrv.newOperator('=='),
       this.uiSegmentSrv.newFake('select filter value', 'value', 'query-segment-value'),
     ];
 
-    this.filterSegments.push(segmentArray);
-    this.filterSegments.push([this.uiSegmentSrv.newPlusButton()]);
+    this.clientFilterSegments.pop();
+    this.clientFilterSegments.push(segmentArray);
+    this.clientFilterSegments.push([this.uiSegmentSrv.newPlusButton()]);
+  };
+
+  _addServerFilterSegment = (sourceSegment: any) => {
+    const segmentArray: any[] = [
+      this.uiSegmentSrv.newCondition(sourceSegment.value),
+      this.uiSegmentSrv.newFake('select filter key', 'value', 'query-segment-value'),
+      this.uiSegmentSrv.newOperator('=='),
+      this.uiSegmentSrv.newFake('select filter value', 'value', 'query-segment-value'),
+    ];
+
+    this.serverFilterSegments.pop();
+    this.serverFilterSegments.push(segmentArray);
+    this.serverFilterSegments.push([this.uiSegmentSrv.newPlusButton()]);
+  };
+
+  onServerFilterSegmentUpdate = segment => {
+    if (segment.type === 'plus-button') {
+      this._addServerFilterSegment(segment);
+      return;
+    }
+
+    this._updateFilterTarget();
+    this.panelCtrl.refresh();
   };
 
   /**
@@ -283,23 +331,23 @@ export class SensuQueryCtrl extends QueryCtrl {
     let segments: any[] = [];
 
     if (segment.type === 'operator') {
-      segments = this.uiSegmentSrv.newOperators(['=', '=~', '!=', '!~', '<', '>']);
+      segments = this.uiSegmentSrv.newOperators(['==', '=~', '!=', '!~', '<', '>']);
     } else if (this.dataPreview && this.dataPreview.length > 0) {
       let options: string[] = [];
       if (index === 0) {
         options = this.getAllDeepKeys();
       } else if (index === 2) {
-        let filterKey = this.filterSegments[parentIndex][0].value;
+        let filterKey = this.clientFilterSegments[parentIndex][0].value;
         options = _(this.dataPreview)
-          .map((data) => _.get(data, filterKey))
+          .map(data => _.get(data, filterKey))
           .uniq()
           .value();
 
-        _.each(this.templateSrv.variables, (variable) =>
+        _.each(this.templateSrv.variables, variable =>
           options.unshift('/$' + variable.name + '/')
         );
       }
-      segments = _.map(options, (option) => this.uiSegmentSrv.newSegment(String(option)));
+      segments = _.map(options, option => this.uiSegmentSrv.newSegment(String(option)));
     }
 
     return this.$q.when(segments);
@@ -309,10 +357,10 @@ export class SensuQueryCtrl extends QueryCtrl {
     const target = <GrafanaTarget>this.target;
 
     // update client filters
-    const clientFilters = _(this.filterSegments)
-      .filter((segmentArray) => segmentArray.length === 3)
-      .filter((segmentArray) => !segmentArray[2].fake)
-      .map((segmentArray) => {
+    const clientFilters = _(this.clientFilterSegments)
+      .filter(segmentArray => segmentArray.length === 3)
+      .filter(segmentArray => !segmentArray[2].fake)
+      .map(segmentArray => {
         return <ClientSideFilter>{
           key: segmentArray[0].value,
           matcher: segmentArray[1].value,
@@ -322,13 +370,42 @@ export class SensuQueryCtrl extends QueryCtrl {
       .value();
 
     target.clientSideFilters = clientFilters;
+
+    // update server filters
+    const serverFilters = _(this.serverFilterSegments)
+      .filter(segmentArray => segmentArray.length === 4)
+      .filter(segmentArray => !segmentArray[1].fake && !segmentArray[3].fake)
+      .map(segmentArray => {
+        let type;
+        switch (segmentArray[0].value) {
+          case 'fieldSelector':
+            type = ServerSideFilterType.FIELD;
+            break;
+          case 'labelSelector':
+            type = ServerSideFilterType.LABEL;
+            break;
+          default:
+            return <ServerSideFilter>{};
+        }
+
+        return <ServerSideFilter>{
+          key: segmentArray[1].value,
+          matcher: segmentArray[2].value,
+          value: segmentArray[3].value,
+          type,
+        };
+      })
+      .filter(filter => filter.type !== undefined)
+      .value();
+
+    target.serverSideFilters = serverFilters;
   };
 
   /**
    * Returns all existing keys of the current data preview.
    */
   getAllDeepKeys = () => {
-    return _.flatMap(this.combineKeys(this.dataPreview[0]), (e) => e);
+    return _.flatMap(this.combineKeys(this.dataPreview[0]), e => e);
   };
 
   /**
@@ -354,9 +431,7 @@ export class SensuQueryCtrl extends QueryCtrl {
 
       options.sort();
 
-      segments = _.map(options, (option) =>
-        this.uiSegmentSrv.newSegment({value: option})
-      );
+      segments = _.map(options, option => this.uiSegmentSrv.newSegment({value: option}));
     }
 
     return this.$q.when(segments);
@@ -379,7 +454,7 @@ export class SensuQueryCtrl extends QueryCtrl {
   /**
    * Removes the field selector on the specified index.
    */
-  removeField = (index) => {
+  removeField = index => {
     this.target.fieldSelectors.splice(index, 1);
     this.panelCtrl.refresh();
   };
@@ -387,16 +462,16 @@ export class SensuQueryCtrl extends QueryCtrl {
   /**
    * Called if an alias is changing.
    */
-  onAliasChange = (parentIndex) => {
+  onAliasChange = parentIndex => {
     this.panelCtrl.refresh();
   };
 
-  combineKeys = (object) => {
+  combineKeys = object => {
     let keys: string[] = Object.keys(object);
 
-    return _.flatMap(keys, (key) => {
+    return _.flatMap(keys, key => {
       if (_.isPlainObject(object[key])) {
-        return _.map(this.combineKeys(object[key]), (nestedKeys) => {
+        return _.map(this.combineKeys(object[key]), nestedKeys => {
           return key + '.' + nestedKeys;
         });
       } else {
@@ -405,14 +480,52 @@ export class SensuQueryCtrl extends QueryCtrl {
     });
   };
 
-  onDataReceived = (dataList) => {
+  _getCurrentApi = () => {
+    return _.find(API_ENDPOINTS, {value: this.target.apiEndpoints});
+  };
+
+  getServerFilterOptions = (segment, parentIndex) => {
+    if (segment.type === 'operator') {
+      return this.$q.when(
+        this.uiSegmentSrv.newOperators(['==', '!=', 'in', 'notin', 'matches'])
+      );
+    } else if (segment.type === 'plus-button' || segment.type === 'condition') {
+      return this.$q.when(
+        _.map(['fieldSelector', 'labelSelector'], value =>
+          this.uiSegmentSrv.newSegment({value})
+        )
+      );
+    }
+
+    const options: string[] = _.map(
+      this.templateSrv.variables,
+      variable => '"$' + variable.name + '"'
+    );
+
+    const filterType = this.serverFilterSegments[parentIndex][0].value;
+
+    if (filterType === 'fieldSelector') {
+      const currentApi = this._getCurrentApi();
+      if (currentApi) {
+        currentApi.fieldSelectors.forEach(field => options.push(field));
+      }
+    }
+
+    const segments = _.map(options, option =>
+      this.uiSegmentSrv.newSegment(new String(option))
+    );
+
+    return this.$q.when(segments);
+  };
+
+  onDataReceived = dataList => {
     //TODO
   };
 
   /**
    * Called when a request is finished. The requests data is stored and used as a data preview which is basis for auto completions.
    */
-  onResponseReceived = (response) => {
+  onResponseReceived = response => {
     if (!response.config.url.endsWith('/auth')) {
       this.dataPreview = response.data;
     }

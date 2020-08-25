@@ -3,7 +3,7 @@
   <!-- API SELECTION -->
   <div class="gf-form-inline">
     <div class="gf-form">
-      <label class="gf-form-label query-keyword width-8">SENSU GO API</label>
+      <label class="gf-form-label query-keyword width-12">SENSU GO API</label>
       <div class="gf-form-select-wrapper">
         <select class="gf-form-input gf-size-auto" ng-model="ctrl.target.apiEndpoints" ng-options="f.value as f.text for f in ctrl.apiEndpoints"
           ng-change="ctrl.onApiChange()"></select>
@@ -26,15 +26,33 @@
     </div>
   </div>
 
-  <!-- FILTER SEGMENTS -->
-  <div class="gf-form-inline" ng-repeat="segmentArray in ctrl.filterSegments">
+  <!-- SERVER FILTER SEGMENTS -->
+  <div class="gf-form-inline" ng-repeat="segmentArray in ctrl.serverFilterSegments">
     <div class="gf-form-inline">
-      <label class="gf-form-label query-keyword width-8">{{$first ? 'FILTER' : ''}}</label>
+      <label class="gf-form-label query-keyword width-12">{{$first ? 'FILTER' : ''}}</label>
+
+      <metric-segment ng-repeat="segment in segmentArray" segment="segment" get-options="ctrl.getServerFilterOptions(segment, $parent.$index)"
+        on-change="ctrl.onServerFilterSegmentUpdate(segment, $parent.$index, $index)"></metric-segment>
+
+      <a ng-show="!$last" class="gf-form-label tight-form-func" ng-click="ctrl.removeFilter($index, true)"><i class="fa fa-trash"></i></a>
+    </div>
+    <div class="gf-form gf-form--grow">
+      <div class="gf-form-label gf-form-label--grow"></div>
+    </div>
+  </div>
+
+  <!-- CLIENT FILTER SEGMENTS -->
+  <div class="gf-form-inline" ng-repeat="segmentArray in ctrl.clientFilterSegments">
+    <div class="gf-form-inline">
+      <label class="gf-form-label query-keyword width-12">{{$first ? 'IN-BROWSER FILTER' : ''}} <info-popover mode="right-normal" ng-show="$first">
+        <b>Note:</b> the aggregation is done on the client-side (browser). This means that a lot of data will be transferred if the query returns a large result set.
+        The default limit is set to <code>0</code> in aggregation queries causing ignoring the limit feature in order to ensure correct aggregation values.
+      </info-popover></label>
 
       <metric-segment ng-repeat="segment in segmentArray" segment="segment" get-options="ctrl.getFilterSegmentOptions(segment, $parent.$index, $index)"
         on-change="ctrl.onFilterSegmentUpdate(segment, $parent.$index, $index)"></metric-segment>
 
-      <a ng-show="!$last" class="gf-form-label tight-form-func" ng-click="ctrl.removeFilter($index)"><i class="fa fa-trash"></i></a>
+      <a ng-show="!$last" class="gf-form-label tight-form-func" ng-click="ctrl.removeFilter($index, false)"><i class="fa fa-trash"></i></a>
     </div>
     <div class="gf-form gf-form--grow">
       <div class="gf-form-label gf-form-label--grow"></div>
@@ -44,7 +62,7 @@
   <!-- FIELD SELECTION -->
   <div ng-show="ctrl.target.queryType == 'field'">
     <div class="gf-form-inline" ng-repeat="fieldSelector in ctrl.target.fieldSelectors">
-      <label class="gf-form-label query-keyword width-8">{{$first ? 'FIELDS' : ''}}</label>
+      <label class="gf-form-label query-keyword width-12">{{$first ? 'FIELDS' : ''}}</label>
 
       <div class="gf-form" ng-repeat="segment in fieldSelector.fieldSegments">
         <label ng-show="!$first" class="gf-form-label width-1">.</label>
@@ -67,7 +85,7 @@
     </div>
 
     <div class="gf-form-inline">
-      <label class="gf-form-label query-keyword width-8"></label>
+      <label class="gf-form-label query-keyword width-12"></label>
 
       <metric-segment ng-repeat="segment in [ctrl.addFieldSegment]" segment="segment" get-options="ctrl.getFieldSelectorOptions(segment, 0, -1)"
         on-change="ctrl.onFieldSelectorSegmentUpdate(segment, 0, -1)"></metric-segment>
@@ -81,7 +99,7 @@
   <!-- AGGREGATION -->
   <div ng-show="ctrl.target.queryType == 'aggregation'">
     <div class="gf-form-inline">
-      <label class="gf-form-label query-keyword width-8">AGGREGATION</label>
+      <label class="gf-form-label query-keyword width-12">AGGREGATION</label>
 
       <div class="gf-form-select-wrapper">
         <select class="gf-form-input gf-size-auto" ng-model="ctrl.target.aggregationType" ng-options="f.value as f.text for f in ctrl.aggregationTypes"
@@ -111,7 +129,7 @@
 
   <!-- LIMIT -->
   <div class="gf-form-inline">
-    <label class="gf-form-label query-keyword width-8">
+    <label class="gf-form-label query-keyword width-12">
       LIMIT
       <info-popover mode="right-normal" ng-show="ctrl.target.queryType == 'aggregation'">
         <b>Note:</b> the aggregation is done on the client-side (browser). This means that a lot of data will be transferred if the query returns a large result set.
@@ -129,7 +147,7 @@
 
   <!-- FORMAT -->
   <div class="gf-form-inline">
-    <label class="gf-form-label query-keyword width-8">FORMAT AS</label>
+    <label class="gf-form-label query-keyword width-12">FORMAT AS</label>
 
     <div class="gf-form-select-wrapper">
       <select class="gf-form-input gf-size-auto" ng-model="ctrl.target.format" ng-options="f.value as f.text for f in ctrl.formats"

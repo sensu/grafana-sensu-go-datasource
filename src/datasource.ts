@@ -70,7 +70,7 @@ export default class SensuDatasource {
     target.namespace = namespaces;
 
     // resolve variables in filters
-    clientFilters.forEach((filter) => {
+    clientFilters.forEach(filter => {
       filter.key = this.templateSrv.replace(filter.key, queryOptions.scopedVars, 'csv');
       filter.value = this.templateSrv.replace(
         filter.value,
@@ -83,7 +83,7 @@ export default class SensuDatasource {
   /**
    * Returns the url of the API used by the given target.
    */
-  _getApiUrl = (target) => {
+  _getApiUrl = (target: GrafanaTarget) => {
     const apiEndpoint: any = _.find(API_ENDPOINTS, {value: target.apiEndpoints});
     if (apiEndpoint) {
       return apiEndpoint.url;
@@ -98,7 +98,7 @@ export default class SensuDatasource {
   query(queryOptions) {
     const queryTargets = _(queryOptions.targets)
       .map(ConfigMigration.migrate)
-      .map((target) => this.prepareQuery(target, queryOptions))
+      .map(target => this.prepareQuery(target, queryOptions))
       .value();
 
     // empty result in case there is no query defined
@@ -106,7 +106,7 @@ export default class SensuDatasource {
       return Promise.resolve({data: []});
     }
 
-    const queries = queryTargets.map((prepTarget) => {
+    const queries = queryTargets.map(prepTarget => {
       const {
         apiUrl,
         clientFilters,
@@ -135,8 +135,8 @@ export default class SensuDatasource {
           .query(this, queryOptions)
           //.then((requestResult) => requestResult.data)
           .then(this._timeCorrection)
-          .then((data) => this._filterData(data, clientFilters))
-          .then((data) => {
+          .then(data => this._filterData(data, clientFilters))
+          .then(data => {
             if (queryType === 'field') {
               return this._queryFieldSelection(data, fieldSelectors);
             } else if (queryType === 'aggregation') {
@@ -152,12 +152,12 @@ export default class SensuDatasource {
       if (queryOptions.resultAsPlainArray) {
         // return only values - e.g. for template variables
         const result = _(queryResults)
-          .map((result) => transformer.toTable(result))
-          .map((result) => result.rows)
+          .map(result => transformer.toTable(result))
+          .map(result => result.rows)
           .flatten()
           .flatten()
           .filter()
-          .map((value) => {
+          .map(value => {
             return {text: value};
           })
           .value();
@@ -165,9 +165,7 @@ export default class SensuDatasource {
         return result;
       } else {
         const resultDataList: any[] = _.flatMap(queryResults, (queryResult, index) => {
-          const {
-            target: {format},
-          } = queryTargets[index];
+          const {target: {format}} = queryTargets[index];
 
           if (format === 'series') {
             // return time series format
@@ -190,9 +188,9 @@ export default class SensuDatasource {
    * resolution is in seconds but Grafana uses miliseconds.
    */
   _timeCorrection = (data: any) => {
-    _.each(data, (dataElement) => {
+    _.each(data, dataElement => {
       // iterate over all time properties
-      _.each(TIME_PROPERTIES, (property) => {
+      _.each(TIME_PROPERTIES, property => {
         // fetch the properties value
         const time = _.get(dataElement, property, -1);
         // in case a time is set, we multiply them by 1000 to get miliseconds.
@@ -258,9 +256,9 @@ export default class SensuDatasource {
       fieldSelectors
     );
 
-    const resultData = _.map(data, (dataElement) => {
+    const resultData = _.map(data, dataElement => {
       // extract selected data
-      return _.map(columnMappings, (mapping) => {
+      return _.map(columnMappings, mapping => {
         const value: any = _.get(dataElement, mapping.path);
 
         return <DataPoint>{
@@ -277,9 +275,9 @@ export default class SensuDatasource {
    * Creates a column mapping - which object attribute/path is related to which column.
    */
   _extractColumnMappings = (data: any, fieldSelectors: FieldSelector[]) => {
-    const result: ColumnMapping[] = _.flatMap(fieldSelectors, (selector) => {
+    const result: ColumnMapping[] = _.flatMap(fieldSelectors, selector => {
       const paths = _(data)
-        .map((dataElement) => this.resolvePaths(selector, dataElement))
+        .map(dataElement => this.resolvePaths(selector, dataElement))
         .flatMap()
         .uniq()
         .value();
@@ -295,7 +293,7 @@ export default class SensuDatasource {
           });
         } else {
           // use the alias instead the path as column name
-          return _.map(paths, (path) => {
+          return _.map(paths, path => {
             return <ColumnMapping>{
               path: path,
               alias: selector.alias,
@@ -304,7 +302,7 @@ export default class SensuDatasource {
         }
       } else {
         // use the path itself as column name
-        return _.map(paths, (path) => {
+        return _.map(paths, path => {
           return <ColumnMapping>{
             path: path,
             alias: path,
@@ -320,8 +318,8 @@ export default class SensuDatasource {
    * Returns a filtered representation of the given data.
    */
   _filterData = (data: any, filters: ClientSideFilter[]) => {
-    return _.filter(data, (dataElement) =>
-      _.every(filters, (filter) => this._matches(dataElement, filter))
+    return _.filter(data, dataElement =>
+      _.every(filters, filter => this._matches(dataElement, filter))
     );
   };
 
@@ -366,19 +364,19 @@ export default class SensuDatasource {
       if (basePath === '') {
         return paths;
       } else {
-        return _.map(paths, (path) => basePath + '.' + path);
+        return _.map(paths, path => basePath + '.' + path);
       }
     } else {
       return [basePath];
     }
   };
 
-  _deepResolve = (data) => {
+  _deepResolve = data => {
     let keys: string[] = Object.keys(data);
 
-    return _.flatMap(keys, (key) => {
+    return _.flatMap(keys, key => {
       if (_.isPlainObject(data[key])) {
-        return _.map(this._deepResolve(data[key]), (nestedKeys) => {
+        return _.map(this._deepResolve(data[key]), nestedKeys => {
           return key + '.' + nestedKeys;
         });
       } else {
@@ -415,7 +413,7 @@ export default class SensuDatasource {
   _transformQueryComponentsToQueryOptions = (queryComponents: QueryComponents) => {
     const {apiKey, selectedField, filters, namespace, limit} = queryComponents;
 
-    const filterObjects = _.map(filters, (filter) => {
+    const filterObjects = _.map(filters, filter => {
       return [
         {
           value: filter.key,
@@ -470,7 +468,7 @@ export default class SensuDatasource {
           message: 'Successfully connected against the Sensu Go API',
         };
       })
-      .catch((error) => {
+      .catch(error => {
         if (useApiKey && error.data === 'access_error') {
           return {
             status: 'error',

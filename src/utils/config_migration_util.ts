@@ -28,13 +28,14 @@ const toVersion2 = (target: GrafanaTarget) => {
   const {filterSegments} = target;
 
   const filters = _(filterSegments)
-    .filter((segments) => segments.length === 3)
-    .filter((segments) => !_.get(segments[2], 'fake', false))
-    .map((segments) => {
-      console.log('->', segments); //TODO REMOVE
+    .filter(segments => segments.length === 3)
+    .filter(segments => !_.get(segments[2], 'fake', false))
+    .map(segments => {
+      const matcher = segments[1].value === '=' ? '==' : segments[1].value;
+
       return <ClientSideFilter>{
         key: segments[0].value,
-        matcher: segments[1].value,
+        matcher,
         value: segments[2].value,
       };
     })
