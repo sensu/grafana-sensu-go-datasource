@@ -1,5 +1,10 @@
 import _ from 'lodash';
-import {AccessToken, QueryOptions} from '../types';
+import {
+  AccessToken,
+  QueryOptions,
+  ServerSideFilter,
+  ServerSideFilterType,
+} from '../types';
 
 /**
  * Class which encapsulates the query mechanism against the Sensu Go API.
@@ -69,8 +74,10 @@ export default class Sensu {
       fullUrl += '?limit=' + limit;
     }
 
+    const requestParameters = this._getParameters(options);
+
     return Sensu._authenticate(datasource)
-      .then(() => Sensu._request(datasource, method, fullUrl))
+      .then(() => Sensu._request(datasource, method, fullUrl, requestParameters))
       .then(result => result.data)
       .catch(error => {
         // we'll retry once
@@ -154,7 +161,12 @@ export default class Sensu {
    * @param method the method of the HTTP request (GET, POST, ...)
    * @param url the url to send the request to
    */
-  static _request(datasource: any, method: string, url: string) {
+  static _request(
+    datasource: any,
+    method: string,
+    url: string,
+    requestParameters: Record<string, string> = {}
+  ) {
     const useApiKey = _.get(datasource.instanceSettings, 'jsonData.useApiKey', false);
 
     const req: any = {
@@ -177,6 +189,8 @@ export default class Sensu {
           'Bearer ' + datasource.instanceSettings.tokens.access_token;
       }
     }
+
+    req.params = requestParameters;
 
     return datasource.backendSrv
       .datasourceRequest(req)
@@ -220,5 +234,27 @@ export default class Sensu {
         };
       }
     }
+  }
+
+  static _getParameters(options: QueryOptions) {
+    // build the response filter parameters
+    const fieldSelector = this._buildFilterParameter(
+      options.responseFilters.filter(filter => filter.type === ServerSideFilterType.FIELD)
+    );
+
+    const labelSelector = this._buildFilterParameter(
+      options.responseFilters.filter(filter => filter.type === ServerSideFilterType.LABEL)
+    );
+
+    return {
+      fieldSelector,
+      labelSelector,
+    };
+  }
+
+  static _buildFilterParameter(filters: ServerSideFilter[]) {
+    return _(filters)
+      .map(filter => filter.key + ' ' + filter.matcher + ' ' + filter.value)
+      .join(' && ');
   }
 }

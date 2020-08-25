@@ -207,6 +207,7 @@ export class SensuQueryCtrl extends QueryCtrl {
       url: '/namespaces',
       namespaces: [],
       limit: 0,
+      responseFilters: [],
     })
       .then(result => {
         // get existing namespaces based on query result

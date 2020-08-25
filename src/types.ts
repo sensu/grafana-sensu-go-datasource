@@ -101,6 +101,7 @@ export interface QueryOptions {
   namespaces: string[];
   limit: number;
   forceAccessTokenRefresh?: boolean;
+  responseFilters: ServerSideFilter[];
 }
 
 export interface AccessToken {

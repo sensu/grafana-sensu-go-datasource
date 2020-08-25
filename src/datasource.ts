@@ -44,10 +44,12 @@ export default class SensuDatasource {
     const apiUrl = this._getApiUrl(target);
     // resolve filters
     const clientFilters = _.cloneDeep(target.clientSideFilters);
+    const serverFilters = _.cloneDeep(target.serverSideFilters);
 
     const preparedTarget: PreparedTarget = <PreparedTarget>{
       apiUrl,
       clientFilters,
+      serverFilters,
       target: _.cloneDeep(target), //ensure modifications are not globally propagated
     };
 
@@ -60,7 +62,7 @@ export default class SensuDatasource {
    * Resolves template variables in the given prepared target.
    */
   _resolveTemplateVariables = (preparedTarget: PreparedTarget, queryOptions) => {
-    const {target, clientFilters} = preparedTarget;
+    const {target, clientFilters, serverFilters} = preparedTarget;
 
     // resolve variables in namespaces
     const namespaces: string = this.templateSrv
@@ -70,14 +72,16 @@ export default class SensuDatasource {
     target.namespace = namespaces;
 
     // resolve variables in filters
-    clientFilters.forEach(filter => {
-      filter.key = this.templateSrv.replace(filter.key, queryOptions.scopedVars, 'csv');
-      filter.value = this.templateSrv.replace(
-        filter.value,
-        queryOptions.scopedVars,
-        'regex'
-      );
-    });
+    [clientFilters, serverFilters].forEach(filters =>
+      filters.forEach(filter => {
+        filter.key = this.templateSrv.replace(filter.key, queryOptions.scopedVars, 'csv');
+        filter.value = this.templateSrv.replace(
+          filter.value,
+          queryOptions.scopedVars,
+          'regex'
+        );
+      })
+    );
   };
 
   /**
@@ -110,6 +114,7 @@ export default class SensuDatasource {
       const {
         apiUrl,
         clientFilters,
+        serverFilters,
         target: {queryType, fieldSelectors, namespace, limit},
       } = prepTarget;
 
@@ -128,6 +133,7 @@ export default class SensuDatasource {
         url: apiUrl,
         namespaces: namespace,
         limit: parsedLimit,
+        responseFilters: serverFilters,
       };
 
       return (

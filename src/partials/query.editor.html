@@ -29,9 +29,15 @@
   <!-- SERVER FILTER SEGMENTS -->
   <div class="gf-form-inline" ng-repeat="segmentArray in ctrl.serverFilterSegments">
     <div class="gf-form-inline">
-      <label class="gf-form-label query-keyword width-12">{{$first ? 'FILTER' : ''}}</label>
+      <label class="gf-form-label query-keyword width-12">{{$first ? 'FILTER' : ''}} <info-popover mode="right-normal" ng-show="$first">This filter option makes 
+        use of Sensu Go's <b>Response Filtering</b> feature. The data is filtered by the Sensu Go backend server. See the <a target="_blank" href="https://docs.sensu.io/sensu-go/latest/api/#response-filtering">Sensu Go documentation</a> for more details.</info-popover></label>
 
-      <metric-segment ng-repeat="segment in segmentArray" segment="segment" get-options="ctrl.getServerFilterOptions(segment, $parent.$index)"
+      <metric-segment ng-repeat="segment in segmentArray.slice(0, 1)" segment="segment" get-options="ctrl.getServerFilterOptions(segment, $parent.$index)"
+        on-change="ctrl.onServerFilterSegmentUpdate(segment, $parent.$index, $index)" ng-class="$parent.$last ? '' : 'width-7'"></metric-segment>
+
+      <div ng-show="!$last" class="gf-form-label">:</div>
+
+      <metric-segment ng-repeat="segment in segmentArray.slice(1)" segment="segment" get-options="ctrl.getServerFilterOptions(segment, $parent.$index)"
         on-change="ctrl.onServerFilterSegmentUpdate(segment, $parent.$index, $index)"></metric-segment>
 
       <a ng-show="!$last" class="gf-form-label tight-form-func" ng-click="ctrl.removeFilter($index, true)"><i class="fa fa-trash"></i></a>
@@ -45,8 +51,8 @@
   <div class="gf-form-inline" ng-repeat="segmentArray in ctrl.clientFilterSegments">
     <div class="gf-form-inline">
       <label class="gf-form-label query-keyword width-12">{{$first ? 'IN-BROWSER FILTER' : ''}} <info-popover mode="right-normal" ng-show="$first">
-        <b>Note:</b> the aggregation is done on the client-side (browser). This means that a lot of data will be transferred if the query returns a large result set.
-        The default limit is set to <code>0</code> in aggregation queries causing ignoring the limit feature in order to ensure correct aggregation values.
+        Using the "In-Browser" filter option, the data received from the Sensu Go backend can be filtered. It is important to not, that this filtering is applied <b><u>in your browser after</u></b> the data has been received!
+        It is recommended to use the "normal" filter option which is based on the server-side response filtering feature.
       </info-popover></label>
 
       <metric-segment ng-repeat="segment in segmentArray" segment="segment" get-options="ctrl.getFilterSegmentOptions(segment, $parent.$index, $index)"
