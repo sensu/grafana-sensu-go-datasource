@@ -42,11 +42,11 @@ export default class Sensu {
       namespaces.push(''); // dummy element to execute a query
     }
 
-    const queries = _.map(namespaces, (namespace) =>
+    const queries = _.map(namespaces, namespace =>
       this._doQuery(datasource, options, namespace)
     );
 
-    return Promise.all(queries).then((data) => {
+    return Promise.all(queries).then(data => {
       return _.flatten(data);
     });
   }
@@ -78,8 +78,8 @@ export default class Sensu {
 
     return Sensu._authenticate(datasource)
       .then(() => Sensu._request(datasource, method, fullUrl, requestParameters))
-      .then((result) => result.data)
-      .catch((error) => {
+      .then(result => result.data)
+      .catch(error => {
         // we'll retry once
         if (retryCount >= 1) {
           throw error;
@@ -91,7 +91,7 @@ export default class Sensu {
         // the retry is not immediatly done in order to prevent some race conditions
         const delay = Math.floor(1000 + Math.random() * 1000);
 
-        return new Promise((resolve) => setTimeout(resolve, delay)).then(() =>
+        return new Promise(resolve => setTimeout(resolve, delay)).then(() =>
           this._doQuery(datasource, options, namespace, retryCount + 1)
         );
       });
@@ -142,7 +142,7 @@ export default class Sensu {
    * @param datasource the datasource to use
    */
   static _acquireAccessToken(datasource: any) {
-    return Sensu._request(datasource, 'GET', '/auth').then((result) => {
+    return Sensu._request(datasource, 'GET', '/auth').then(result => {
       let tokens: AccessToken = result.data;
 
       let timestampNow: number = Math.floor(Date.now() / 1000);
@@ -236,24 +236,26 @@ export default class Sensu {
     }
   }
 
+  /**
+   * Returns an object which represents the request parameters that should be used
+   * by the request representing the data source query.
+   *
+   * @param options the query options to use as basis for the parameters
+   */
   static _getParameters(options: QueryOptions) {
     const {limit, responseFilters} = options;
     const result: any = {};
 
     // build the response filter parameters
     const fieldSelector = this._buildFilterParameter(
-      responseFilters.filter(
-        (filter) => filter.type === ServerSideFilterType.FIELD
-      )
+      responseFilters.filter(filter => filter.type === ServerSideFilterType.FIELD)
     );
     if (fieldSelector !== '') {
       result.fieldSelector = fieldSelector;
     }
 
     const labelSelector = this._buildFilterParameter(
-      responseFilters.filter(
-        (filter) => filter.type === ServerSideFilterType.LABEL
-      )
+      responseFilters.filter(filter => filter.type === ServerSideFilterType.LABEL)
     );
     if (labelSelector !== '') {
       result.labelSelector = labelSelector;
@@ -267,9 +269,15 @@ export default class Sensu {
     return result;
   }
 
+  /**
+   * Creates the parameter value for a response (server-side) filter. More details regarding its
+   * format can be found in the documentation: https://docs.sensu.io/sensu-go/latest/api/#response-filtering
+   *
+   * @param filters the filters which will be included in the filter parameter
+   */
   static _buildFilterParameter(filters: ServerSideFilter[]) {
     return _(filters)
-      .map((filter) => filter.key + ' ' + filter.matcher + ' ' + filter.value)
+      .map(filter => filter.key + ' ' + filter.matcher + ' ' + filter.value)
       .join(' && ');
   }
 }

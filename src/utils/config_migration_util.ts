@@ -1,8 +1,10 @@
 import _ from 'lodash';
 import {ClientSideFilter, GrafanaTarget} from '../types';
 
+/** The latest configuration version. */
 const LATEST_VERSION = 2;
 
+/** Migrates the passed configuration target to the latest version. The passed object will be mutated. */
 const migrate = (target: GrafanaTarget) => {
   const {version} = target;
 
@@ -16,12 +18,14 @@ const migrate = (target: GrafanaTarget) => {
   return target;
 };
 
+/** Initializes the configuration target. */
 const init = (target: GrafanaTarget) => {
   target.version = LATEST_VERSION;
   target.clientSideFilters = [];
   target.serverSideFilters = [];
 };
 
+/** Migrates the passed configuration target from version 1 to version 2. */
 const toVersion2 = (target: GrafanaTarget) => {
   console.log('Migrating data source configuration to version 2.');
 

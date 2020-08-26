@@ -12,8 +12,8 @@ const transform = (dataMatrix: DataPoint[][]) => {
   // - value => value
   return _(dataMatrix)
     .flatten()
-    .filter((data) => _.isFinite(data.value))
-    .map((data) => {
+    .filter(data => _.isFinite(data.value))
+    .map(data => {
       return {
         target: data.name,
         datapoints: [[data.value, now]],

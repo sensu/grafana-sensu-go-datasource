@@ -122,6 +122,10 @@ export class SensuQueryCtrl extends QueryCtrl {
     this.panelCtrl.refresh();
   }
 
+  /**
+   * Creates an array containg segments which represent a in-browser filter. The first segment represents the filter-key,
+   * the second the operator and the third the filter-value.
+   */
   _createClientFilterSegments = (filter: ClientSideFilter) => {
     let segmentArray = [
       this.uiSegmentSrv.newKey(filter.key),
@@ -132,6 +136,10 @@ export class SensuQueryCtrl extends QueryCtrl {
     return segmentArray;
   };
 
+  /**
+   * Creates an array containg segments which represent a response filter (sever-side). The first segment represents the type
+   * of the filer (labelSelector or fieldSelector), the second the filter-key, the third the operator and the fourth the filter-value.
+   */
   _createServerFilterSegments = (filter: ServerSideFilter) => {
     const type =
       filter.type === ServerSideFilterType.FIELD ? 'fieldSelector' : 'labelSelector';
@@ -287,7 +295,7 @@ export class SensuQueryCtrl extends QueryCtrl {
   };
 
   /**
-   * Adds a new filter.
+   * Adds a new in-browser filter.
    */
   _addClientFilterSegment = (sourceSegment: any) => {
     const segmentArray: any[] = [
@@ -301,6 +309,9 @@ export class SensuQueryCtrl extends QueryCtrl {
     this.clientFilterSegments.push([this.uiSegmentSrv.newPlusButton()]);
   };
 
+  /**
+   * Adds a new response filter.
+   */
   _addServerFilterSegment = (sourceSegment: any) => {
     const segmentArray: any[] = [
       this.uiSegmentSrv.newCondition(sourceSegment.value),
@@ -314,6 +325,11 @@ export class SensuQueryCtrl extends QueryCtrl {
     this.serverFilterSegments.push([this.uiSegmentSrv.newPlusButton()]);
   };
 
+  /**
+   * Called when a response filter configuration is changed.
+   *
+   * @param segment the segment which has been changed
+   */
   onServerFilterSegmentUpdate = segment => {
     if (segment.type === 'plus-button') {
       this._addServerFilterSegment(segment);
@@ -355,6 +371,12 @@ export class SensuQueryCtrl extends QueryCtrl {
     return this.$q.when(segments);
   };
 
+  /**
+   * The segments which represents the specified filters will not be persisted and passed to the data source.
+   * Instead, an object is created which represents the filters which is passed to the data source and
+   * persisted by Grafana. Calling this method syncs the object (target) and updates its value to match the
+   * segments' values specified by the user.
+   */
   _updateFilterTarget = () => {
     const target = <GrafanaTarget>this.target;
 
@@ -482,6 +504,9 @@ export class SensuQueryCtrl extends QueryCtrl {
     });
   };
 
+  /**
+   * Returns the currently selected api endpoint.
+   */
   _getCurrentApi = () => {
     return _.find(API_ENDPOINTS, {value: this.target.apiEndpoints});
   };

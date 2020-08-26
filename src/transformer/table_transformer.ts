@@ -12,7 +12,7 @@ const transform = (dataMatrix: DataPoint[][]) => {
   _.each(columns, (column, index) => (columnIndexMap[column.text] = index));
 
   // generate data rows
-  const rows: any[] = _.map(dataMatrix, (dataRow) => {
+  const rows: any[] = _.map(dataMatrix, dataRow => {
     const row = _.times(columns.length, _.constant(null));
 
     _(dataRow)
@@ -24,7 +24,7 @@ const transform = (dataMatrix: DataPoint[][]) => {
         }
       })
       .flatten()
-      .map((data) => {
+      .map(data => {
         if (_.isPlainObject(data[1]) || _.isArray(data[1])) {
           data[1] = JSON.stringify(data[1]);
         }
@@ -43,6 +43,12 @@ const transform = (dataMatrix: DataPoint[][]) => {
   };
 };
 
+/**
+ * Returns an array of columns which exist in the given data matrix. Each data point attribute will be
+ * represents by a column.
+ *
+ * @param dataMatrix the data basis
+ */
 const _extractColumns = (dataMatrix: DataPoint[][]) => {
   const isArrayMarker = {};
 
@@ -52,7 +58,7 @@ const _extractColumns = (dataMatrix: DataPoint[][]) => {
     .map(({name, value}) => {
       if (_.isArray(value)) {
         isArrayMarker[name] = true;
-        return _.times(value.length, (index) => name + '[' + index + ']');
+        return _.times(value.length, index => name + '[' + index + ']');
       } else {
         if (_.isNil(value) && _.get(isArrayMarker, name, false)) {
           return [];
@@ -62,7 +68,7 @@ const _extractColumns = (dataMatrix: DataPoint[][]) => {
     })
     .flatten()
     .uniq()
-    .map((name) => {
+    .map(name => {
       return {
         text: name,
       };

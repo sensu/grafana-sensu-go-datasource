@@ -3,14 +3,18 @@ import {DEFAULT_LIMIT, DEFAULT_AGGREGATION_LIMIT} from '../constants';
 
 import {QueryComponents, GrafanaTarget, ServerSideFilterType} from '../types';
 
+/** RegEx matching a in-browser filter of the WHERE-clause. */
 const CLIENT_FILTER_REG_EXP = '([^\\s:=]+)\\s*(==|=~|!=|>|<|!~|=)\\s*(\\S+)';
 
+/** RegEx matching a response filter (server-side) of the WHERE-clause. */
 const SERVER_FILTER_REG_EXP =
   '(fieldSelector|labelSelector):(\\S+)\\s*(==|!=|IN|NOTIN|MATCHES)\\s*(\\[[^[]+\\]|"[^"]+"|\\S+)';
 
+/** RegEx representing a single element of the WHERE-clause. */
 const QUERY_SINGLE_FILTER_REG_EXP =
   '(' + SERVER_FILTER_REG_EXP + '|' + CLIENT_FILTER_REG_EXP + ')';
 
+/** RegEx representing the whole query string. */
 const QUERY_FULL_REG_EXP =
   '^\\s*QUERY\\s+API\\s+(entity|events|namespaces)\\s+(IN\\s+NAMESPACE\\s+(\\S+)\\s+)?SELECT\\s+(\\S+)(\\s+WHERE\\s+(' +
   QUERY_SINGLE_FILTER_REG_EXP +
@@ -45,7 +49,7 @@ export function targetToQueryString(target: GrafanaTarget) {
  */
 const _queryTypeField = (target: GrafanaTarget) => {
   const fields = _(target.fieldSelectors)
-    .flatMap((selector) => {
+    .flatMap(selector => {
       if (selector.alias) {
         return selector.getPath() + ' AS ' + selector.alias;
       } else {
@@ -92,7 +96,7 @@ const _whereClause = (target: GrafanaTarget) => {
 
   const serverFilters = _(serverSideFilters)
     .map(
-      (filter) =>
+      filter =>
         (filter.type == ServerSideFilterType.FIELD ? 'fieldSelector' : 'labelSelector') +
         ':' +
         filter.key +
@@ -104,10 +108,12 @@ const _whereClause = (target: GrafanaTarget) => {
     .value();
 
   const clientFilters = _(clientSideFilters)
-    .map((filter) => filter.key + ' ' + filter.matcher + ' ' + filter.value)
+    .map(filter => filter.key + ' ' + filter.matcher + ' ' + filter.value)
     .value();
 
-  const whereClause = _([serverFilters, clientFilters]).flatten().join(' AND ');
+  const whereClause = _([serverFilters, clientFilters])
+    .flatten()
+    .join(' AND ');
 
   if (whereClause) {
     return ' WHERE ' + whereClause;
@@ -169,16 +175,16 @@ export const extractQueryComponents = (query: string) => {
     const clientFilterRegExp = new RegExp('(\\s|^)' + CLIENT_FILTER_REG_EXP, 'g');
     const serverFilterRegExp = new RegExp(SERVER_FILTER_REG_EXP, 'gi');
 
-    const clientFilters = Array.from(
-      <string[]>(<any>matchResult[6]).matchAll(clientFilterRegExp)
-    );
+    const clientFilters = Array.from(<string[]>(<any>matchResult[6]).matchAll(
+      clientFilterRegExp
+    ));
 
-    const serverFilters = Array.from(
-      <string[]>(<any>matchResult[6]).matchAll(serverFilterRegExp)
-    );
+    const serverFilters = Array.from(<string[]>(<any>matchResult[6]).matchAll(
+      serverFilterRegExp
+    ));
 
     if (clientFilters !== null) {
-      clientFilters.forEach((filter) =>
+      clientFilters.forEach(filter =>
         components.clientFilters.push({
           key: filter[2],
           matcher: filter[3] === '=' ? '==' : filter[2], // to be downwards compatible
@@ -188,7 +194,7 @@ export const extractQueryComponents = (query: string) => {
     }
 
     if (serverFilters !== null) {
-      serverFilters.forEach((filter) =>
+      serverFilters.forEach(filter =>
         components.serverFilters.push({
           type:
             filter[1] === 'fieldSelector'
