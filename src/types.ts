@@ -86,7 +86,8 @@ export interface QueryComponents {
   readonly apiKey: string;
   readonly namespace: string;
   readonly selectedField: string;
-  readonly filters: ClientSideFilter[];
+  readonly clientFilters: ClientSideFilter[];
+  readonly serverFilters: ServerSideFilter[];
   readonly limit: number;
 }
 
@@ -113,17 +114,18 @@ export interface AccessToken {
 
 export interface GrafanaTarget {
   /** @deprecated */
-  filterSegments: any[];
+  filterSegments?: any[];
   /** @deprecated */
   aggregation?: string;
 
   aggregationAlias?: string;
   aggregationField?: string;
-  aggregationRequiresTarget: boolean;
+  aggregationRequiresTarget?: boolean;
   aggregationType?: string;
   apiEndpoints: string;
   fieldSelectors: FieldSelector[];
   format: string;
+  limit?: string;
   namespace: string;
   queryType: string;
 

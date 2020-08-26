@@ -417,31 +417,24 @@ export default class SensuDatasource {
    * Transforms the given query components into an options object which can be used by the `query(..)` function.
    */
   _transformQueryComponentsToQueryOptions = (queryComponents: QueryComponents) => {
-    const {apiKey, selectedField, filters, namespace, limit} = queryComponents;
-
-    const filterObjects = _.map(filters, filter => {
-      return [
-        {
-          value: filter.key,
-        },
-        {
-          value: filter.matcher,
-        },
-        {
-          value: filter.value,
-        },
-      ];
-    });
+    const {
+      apiKey,
+      selectedField,
+      clientFilters,
+      serverFilters,
+      namespace,
+      limit,
+    } = queryComponents;
 
     const options = {
       targets: [
-        {
+        <GrafanaTarget>{
           apiEndpoints: apiKey,
           queryType: 'field',
           namespace: namespace,
-          limit: limit,
+          limit: _.isNaN(limit) ? null : new String(limit),
           fieldSelectors: [
-            {
+            <FieldSelector>{
               fieldSegments: [
                 {
                   value: selectedField,
@@ -449,7 +442,10 @@ export default class SensuDatasource {
               ],
             },
           ],
-          filterSegments: filterObjects,
+          format: 'table',
+          clientSideFilters: clientFilters,
+          serverSideFilters: serverFilters,
+          version: 2,
         },
       ],
     };

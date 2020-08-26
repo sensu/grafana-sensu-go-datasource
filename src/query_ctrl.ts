@@ -321,6 +321,8 @@ export class SensuQueryCtrl extends QueryCtrl {
       return;
     }
 
+    segment.value = segment.value; // prevent the usage of spaces
+
     this._updateFilterTarget();
     this.panelCtrl.refresh();
   };
