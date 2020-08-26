@@ -26,7 +26,7 @@ const QUERY_FULL_REG_EXP =
  * Creates a query string based on the target definition.
  * @param target the data used by the query
  */
-export function targetToQueryString(target: GrafanaTarget) {
+export function targetToQueryString(target: GrafanaTarget): string {
   let query: string = 'QUERY API ' + target.apiEndpoints;
 
   query += _namespace(target);
@@ -147,7 +147,7 @@ const _limit = (target: GrafanaTarget) => {
   }
 };
 
-export const extractQueryComponents = (query: string) => {
+export const extractQueryComponents = (query: string): QueryComponents | null => {
   const queryRegExp = new RegExp(QUERY_FULL_REG_EXP, 'i');
   const matchResult = query.match(queryRegExp);
 

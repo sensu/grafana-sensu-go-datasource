@@ -1,10 +1,10 @@
-import {DataPoint} from '../types';
+import {DataPoint, GrafanaTable} from '../types';
 import _ from 'lodash';
 
 /**
  * Transforms the given data into a table representation.
  */
-const transform = (dataMatrix: DataPoint[][]) => {
+const transform = (dataMatrix: DataPoint[][]): GrafanaTable => {
   const columns = _extractColumns(dataMatrix);
 
   // create column index mapping
@@ -36,7 +36,7 @@ const transform = (dataMatrix: DataPoint[][]) => {
   });
 
   // create grafana result object
-  return {
+  return <GrafanaTable>{
     columns,
     rows,
     type: 'table',

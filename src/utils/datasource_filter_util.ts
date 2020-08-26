@@ -6,7 +6,11 @@ import _ from 'lodash';
  * @param operator the operator used for comparision
  * @param dataValue the data value to test
  */
-export const matchs = (filterValue: string, operator: string, dataValue: any) => {
+export const matchs = (
+  filterValue: string,
+  operator: string,
+  dataValue: number | string | boolean
+): boolean => {
   if (operator === '==') {
     return filterValue == dataValue;
   }

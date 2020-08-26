@@ -136,21 +136,19 @@ export default class SensuDatasource {
         responseFilters: serverFilters,
       };
 
-      return (
-        sensu
-          .query(this, queryOptions)
-          .then(this._timeCorrection)
-          .then(data => this._filterData(data, clientFilters))
-          .then(data => {
-            if (queryType === 'field') {
-              return this._queryFieldSelection(data, fieldSelectors);
-            } else if (queryType === 'aggregation') {
-              return this._queryAggregation(data, prepTarget);
-            } else {
-              return [];
-            }
-          })
-      );
+      return sensu
+        .query(this, queryOptions)
+        .then(this._timeCorrection)
+        .then(data => this._filterData(data, clientFilters))
+        .then(data => {
+          if (queryType === 'field') {
+            return this._queryFieldSelection(data, fieldSelectors);
+          } else if (queryType === 'aggregation') {
+            return this._queryAggregation(data, prepTarget);
+          } else {
+            return [];
+          }
+        });
     });
 
     return Promise.all(queries).then((queryResults: any) => {
@@ -336,7 +334,7 @@ export default class SensuDatasource {
     const matcher: string = filter.matcher;
     const filterValue: string = filter.value;
 
-    let elementValue: any = _.get(element, filterKey);
+    const elementValue: any = _.get(element, filterKey);
 
     return FilterUtils.matchs(filterValue, matcher, elementValue);
   };
@@ -347,11 +345,11 @@ export default class SensuDatasource {
    */
   resolvePaths = (selector: any, data: any) => {
     let selection: any = data;
-    let lastSelector: string = '';
+    let lastSelector = '';
     let basePath = '';
 
     for (let i = 0; i < selector.fieldSegments.length; i++) {
-      let segment: any = selector.fieldSegments[i];
+      const segment: any = selector.fieldSegments[i];
       lastSelector = segment.value;
 
       if (lastSelector !== '*') {
@@ -365,7 +363,7 @@ export default class SensuDatasource {
     }
 
     if (lastSelector === '*') {
-      let paths = this._deepResolve(selection);
+      const paths = this._deepResolve(selection);
       if (basePath === '') {
         return paths;
       } else {
@@ -377,7 +375,7 @@ export default class SensuDatasource {
   };
 
   _deepResolve = data => {
-    let keys: string[] = Object.keys(data);
+    const keys: string[] = Object.keys(data);
 
     return _.flatMap(keys, key => {
       if (_.isPlainObject(data[key])) {
@@ -393,7 +391,7 @@ export default class SensuDatasource {
   /**
    * Executes a query based on the given query command which is a string representation of it.
    */
-  metricFindQuery(query: string, queryOptions?: any) {
+  metricFindQuery(query: string) {
     return this._query(query);
   }
 

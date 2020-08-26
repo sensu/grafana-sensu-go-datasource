@@ -1,4 +1,4 @@
-import { InstanceSettings } from './types';
+import {InstanceSettings} from './types';
 
 /**
  * Controller responsible for the configuration ui.
@@ -11,13 +11,18 @@ export class SensuConfigCtrl {
 
   /** @ngInject **/
   constructor($scope) {
-    const that = this;
-    $scope.$watch(() => that.current.url, (value) => that.current.jsonData.currentUrl = value);
-    $scope.$watch(() => that.current.basicAuth, (value) => {
-      if (value) {
-        that.current.jsonData.useApiKey = false;
+    $scope.$watch(
+      () => this.current.url,
+      value => (this.current.jsonData.currentUrl = value)
+    );
+    $scope.$watch(
+      () => this.current.basicAuth,
+      value => {
+        if (value) {
+          this.current.jsonData.useApiKey = false;
+        }
       }
-    });
+    );
   }
 
   /**
@@ -29,7 +34,7 @@ export class SensuConfigCtrl {
       current.basicAuth = false;
       this.resetApiKey();
     }
-  }
+  };
 
   /**
    * Resets the currely set API key.
@@ -38,5 +43,5 @@ export class SensuConfigCtrl {
     this.current.secureJsonFields.apiKey = false;
     this.current.secureJsonData = this.current.secureJsonData || {};
     this.current.secureJsonData.apiKey = '';
-  }
+  };
 }

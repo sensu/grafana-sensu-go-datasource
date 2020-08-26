@@ -5,7 +5,7 @@ import {ClientSideFilter, GrafanaTarget} from '../types';
 const LATEST_VERSION = 2;
 
 /** Migrates the passed configuration target to the latest version. The passed object will be mutated. */
-const migrate = (target: GrafanaTarget) => {
+const migrate = (target: GrafanaTarget): GrafanaTarget => {
   const {version} = target;
 
   if (version === undefined) {

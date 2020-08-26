@@ -62,7 +62,7 @@ export default class Sensu {
     datasource: any,
     options: QueryOptions,
     namespace: string,
-    retryCount: number = 0
+    retryCount = 0
   ) {
     const {method, url} = options;
 
@@ -126,7 +126,7 @@ export default class Sensu {
    * @param token the token to check
    */
   static _isTokenExpired(token: AccessToken) {
-    let timestampNow: number = Math.floor(Date.now() / 1000);
+    const timestampNow: number = Math.floor(Date.now() / 1000);
     let expiresAt: number = token.expires_at;
 
     if (token.expires_offset) {
@@ -143,10 +143,11 @@ export default class Sensu {
    */
   static _acquireAccessToken(datasource: any) {
     return Sensu._request(datasource, 'GET', '/auth').then(result => {
-      let tokens: AccessToken = result.data;
+      const tokens: AccessToken = result.data;
 
-      let timestampNow: number = Math.floor(Date.now() / 1000);
-      let expiresOffset: number = tokens.expires_at - timestampNow - Sensu.tokenTimeout_s;
+      const timestampNow: number = Math.floor(Date.now() / 1000);
+      const expiresOffset: number =
+        tokens.expires_at - timestampNow - Sensu.tokenTimeout_s;
 
       tokens.expires_offset = expiresOffset;
 

@@ -127,7 +127,7 @@ export class SensuQueryCtrl extends QueryCtrl {
    * the second the operator and the third the filter-value.
    */
   _createClientFilterSegments = (filter: ClientSideFilter) => {
-    let segmentArray = [
+    const segmentArray = [
       this.uiSegmentSrv.newKey(filter.key),
       this.uiSegmentSrv.newOperator(filter.matcher),
       this.uiSegmentSrv.newKeyValue(filter.value),
@@ -144,7 +144,7 @@ export class SensuQueryCtrl extends QueryCtrl {
     const type =
       filter.type === ServerSideFilterType.FIELD ? 'fieldSelector' : 'labelSelector';
 
-    let segmentArray = [
+    const segmentArray = [
       this.uiSegmentSrv.newCondition(type),
       this.uiSegmentSrv.newKey(filter.key),
       this.uiSegmentSrv.newOperator(filter.matcher),
@@ -336,8 +336,6 @@ export class SensuQueryCtrl extends QueryCtrl {
       return;
     }
 
-    segment.value = segment.value; // prevent the usage of spaces
-
     this._updateFilterTarget();
     this.panelCtrl.refresh();
   };
@@ -355,7 +353,7 @@ export class SensuQueryCtrl extends QueryCtrl {
       if (index === 0) {
         options = this.getAllDeepKeys();
       } else if (index === 2) {
-        let filterKey = this.clientFilterSegments[parentIndex][0].value;
+        const filterKey = this.clientFilterSegments[parentIndex][0].value;
         options = _(this.dataPreview)
           .map(data => _.get(data, filterKey))
           .uniq()
@@ -445,7 +443,7 @@ export class SensuQueryCtrl extends QueryCtrl {
 
       if (index > 0) {
         for (let i = 0; i < index; i++) {
-          let fieldSegment = this.target.fieldSelectors[parentIndex].fieldSegments[i];
+          const fieldSegment = this.target.fieldSelectors[parentIndex].fieldSegments[i];
           currentSelection = _.get(currentSelection, fieldSegment.value);
         }
       }
@@ -464,7 +462,7 @@ export class SensuQueryCtrl extends QueryCtrl {
   /**
    * Called if a field segment is changed.
    */
-  onFieldSelectorSegmentUpdate = (segment, parentIndex, index) => {
+  onFieldSelectorSegmentUpdate = (segment, parentIndex) => {
     if (segment == this.addFieldSegment) {
       this.target.fieldSelectors.push(new FieldSelector(this, segment.value));
       this.addFieldSegment = this.uiSegmentSrv.newPlusButton();
@@ -486,12 +484,12 @@ export class SensuQueryCtrl extends QueryCtrl {
   /**
    * Called if an alias is changing.
    */
-  onAliasChange = parentIndex => {
+  onAliasChange = () => {
     this.panelCtrl.refresh();
   };
 
   combineKeys = object => {
-    let keys: string[] = Object.keys(object);
+    const keys: string[] = Object.keys(object);
 
     return _.flatMap(keys, key => {
       if (_.isPlainObject(object[key])) {
@@ -545,7 +543,7 @@ export class SensuQueryCtrl extends QueryCtrl {
     return this.$q.when(segments);
   };
 
-  onDataReceived = dataList => {
+  onDataReceived = () => {
     //TODO
   };
 

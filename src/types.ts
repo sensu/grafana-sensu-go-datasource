@@ -29,7 +29,7 @@ export interface BaseFilter {
   matcher: string;
 }
 
-export interface ClientSideFilter extends BaseFilter {}
+export type ClientSideFilter = BaseFilter;
 
 export interface ServerSideFilter extends BaseFilter {
   type: ServerSideFilterType;
@@ -132,4 +132,19 @@ export interface GrafanaTarget {
   version: number;
   clientSideFilters: ClientSideFilter[];
   serverSideFilters: ServerSideFilter[];
+}
+
+export interface GrafanaUiSegment {
+  value: string;
+}
+
+export interface GrafanaTimeSeries {
+  target: string; // time series name
+  datapoints: unknown[];
+}
+
+export interface GrafanaTable {
+  columns: unknown[];
+  rows: unknown[][];
+  type: string;
 }
