@@ -100,7 +100,7 @@ The data source supports the response filter feature of the Sensu Go backend ser
 With this filter option, the data is filtered by the Sensu Go server before it is transferred to Grafana, reducing the data to be sent.
 See the [Sensu Go documentation][response-filtering] for more details.
 
-Using the _"In-Browser"_ filter option, the data returned by the Sensu Go server can be filtered again. It is important to note that this filtering is done in the browser by Grafana. This means that a lot of data could be transferred before the filters are applied. For this reason it is recommended to use the "normal" filter option as far as possible.
+Using the _"In-Browser"_ filter option, the data returned by the Sensu Go server can be filtered again. It is important to note that this filtering is done in the browser by Grafana. This means that a lot of data could be transferred before the filters are applied. Furthermore, in combination with a limit, it can lead to misleading results, because only a subset of the data is used. For this reason it is recommended to use the "normal" filter option as far as possible.
 
 ##### Query by Namespace
 

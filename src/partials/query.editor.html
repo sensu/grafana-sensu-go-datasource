@@ -51,7 +51,7 @@
   <div class="gf-form-inline" ng-repeat="segmentArray in ctrl.clientFilterSegments">
     <div class="gf-form-inline">
       <label class="gf-form-label query-keyword width-12">{{$first ? 'IN-BROWSER FILTER' : ''}} <info-popover mode="right-normal" ng-show="$first">
-        Using the "In-Browser" filter option, the data received from the Sensu Go backend can be filtered. It is important to not, that this filtering is applied <b><u>in your browser after</u></b> the data has been received!
+        Using the "In-Browser" filter option, the data received from the Sensu Go backend can be filtered. It is important to note, that this filtering is applied <b><u>in your browser after</u></b> the data has been received! This means that in combination with a limit, it can lead to misleading results.
         It is recommended to use the "normal" filter option which is based on the server-side response filtering feature.
       </info-popover></label>
 
