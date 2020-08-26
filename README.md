@@ -82,11 +82,27 @@ To learn more about building dashboards, see the [Grafana docs][9].
   width="750"
 />
 
-The Sensu Go Data Source supports query strings with the structure:
+### Raw Queries
 
-    QUERY API (entity|events|namespaces) [IN NAMESPACE (namespace)[|(namespace)]] SELECT (field-key) [WHERE (field-key)(=|!=|=~|!~|<|>)(field-value) [AND (field-key)(=|!=|=~|!~|<|>)(field-value)]] [LIMIT (limit)]
+The Sensu Go Data Source supports query strings (e.g. for template variables) with the following structure:
+
+    QUERY API (entity|events|namespaces) [IN NAMESPACE (namespace)[|(namespace)]] SELECT (field-key) [WHERE <FILTER|IN_BROWSER_FILTER> [AND <FILTER|IN_BROWSER_FILTER>]] [LIMIT (limit)]
 
 > Note: Query keywords are case sensitive.
+
+##### Filter and In-Browser Filter
+
+    Filter: (fieldSelector|labelSelector):(filter-key) (==|!=|in|notin|matches) (field-value)
+
+    In-Browser Filter: (field-key) (==|!=|=~|!~|<|>) (field-value)
+
+The data source supports the response filter feature of the Sensu Go backend server.
+With this filter option, the data is filtered by the Sensu Go server before it is transferred to Grafana, reducing the data to be sent.
+See the [Sensu Go documentation][response-filtering] for more details.
+
+Using the _"In-Browser"_ filter option, the data returned by the Sensu Go server can be filtered again. It is important to note that this filtering is done in the browser by Grafana. This means that a lot of data could be transferred before the filters are applied. Furthermore, in combination with a limit, it can lead to misleading results, because only a subset of the data is used. For this reason it is recommended to use the "normal" filter option as far as possible.
+
+##### Query by Namespace
 
 You can use `IN NAMESPACE` with the entity and events APIs to restrict queries to a specified namespace.
 When omitted, `IN NAMESPACE` defaults to the `default` namespace.
@@ -101,16 +117,22 @@ The following query returns hostnames containing the string `webserver` within t
 QUERY API entity SELECT system.hostname WHERE system.hostname=~/webserver/
 ```
 
+The following query returns all events with a `linux` subscription within the `default` namespace:
+
+```
+QUERY API events SELECT * WHERE fieldSelector:"linux" IN event.check.subscriptions
+```
+
 The following query returns 100 entity hostnames with active, non-OK events within the `ops` namespace:
 
 ```
 QUERY API events IN NAMESPACE ops SELECT entity.system.hostname WHERE check.status>0 LIMIT 100
 ```
 
-The following query returns all namespaces with names starting with `x`:
+The following query returns all namespaces with names cotnaing `other-`:
 
 ```
-QUERY API namespaces SELECT name WHERE name=~/^x/
+QUERY API namespaces SELECT name WHERE fieldSelector:namespace.name MATCHES "other-"
 ```
 
 The following query returns all entity names across all namespaces:
@@ -129,6 +151,12 @@ The following query returns the total count of entities in the `default` and `ot
 
 ```
 QUERY API entity IN NAMESPACE default|other AGGREGATE count
+```
+
+The following query returns all silenced events for all namespaces:
+
+```
+QUERY API events IN NAMESPACE * SELECT * WHERE fieldSelector:event.check.is_silenced == true
 ```
 
 ### Using Template Variables for Namespace Selection
@@ -196,3 +224,4 @@ Running `release-it` creates a `releases` directory containing the built zip arc
 [10]: https://www.npmjs.com/package/release-it
 [npm]: https://www.npmjs.com/get-npm
 [api_key_doc]: https://docs.sensu.io/sensu-go/latest/reference/apikeys/
+[response-filtering]: https://docs.sensu.io/sensu-go/latest/api/#response-filtering

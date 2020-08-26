@@ -1,16 +1,32 @@
 import _ from 'lodash';
-import { DEFAULT_LIMIT, DEFAULT_AGGREGATION_LIMIT } from '../constants';
+import {DEFAULT_LIMIT, DEFAULT_AGGREGATION_LIMIT} from '../constants';
 
-import { QueryComponents } from '../types';
+import {QueryComponents, GrafanaTarget, ServerSideFilterType} from '../types';
 
-const QUERY_FULL_REG_EXP = /QUERY\s+API\s+(entity|events|namespaces)\s+(IN\s+NAMESPACE\s+(\S+)\s+)?SELECT\s+(\S+)(\s+WHERE\s+(\S+\s*(=~?|!=|>|<|!=)\s*\S+(\s+AND\s+\S+\s*(=~?|!=|>|<|!=)\s*\S+)*))?(\s+LIMIT\s+(\d+))?/;
-const QUERY_SINGLE_FILTER_REG_EXP = /(\S+)\s*(=~?|!=|>|<|!~)\s*(\S+)/g;
+/** RegEx matching a in-browser filter of the WHERE-clause. */
+const CLIENT_FILTER_REG_EXP = '([^\\s:=]+)\\s*(==|=~|!=|>|<|!~|=)\\s*(\\S+)';
+
+/** RegEx matching a response filter (server-side) of the WHERE-clause. */
+const SERVER_FILTER_REG_EXP =
+  '(fieldSelector|labelSelector):(\\S+)\\s*(==|!=|IN|NOTIN|MATCHES)\\s*(\\[[^[]+\\]|"[^"]+"|\\S+)';
+
+/** RegEx representing a single element of the WHERE-clause. */
+const QUERY_SINGLE_FILTER_REG_EXP =
+  '(' + SERVER_FILTER_REG_EXP + '|' + CLIENT_FILTER_REG_EXP + ')';
+
+/** RegEx representing the whole query string. */
+const QUERY_FULL_REG_EXP =
+  '^\\s*QUERY\\s+API\\s+(entity|events|namespaces)\\s+(IN\\s+NAMESPACE\\s+(\\S+)\\s+)?SELECT\\s+(\\S+)(\\s+WHERE\\s+(' +
+  QUERY_SINGLE_FILTER_REG_EXP +
+  '(\\s+AND\\s+' +
+  QUERY_SINGLE_FILTER_REG_EXP +
+  ')*))?(\\s+LIMIT\\s+(\\d+))?\\s*$';
 
 /**
  * Creates a query string based on the target definition.
  * @param target the data used by the query
  */
-export function targetToQueryString(target) {
+export function targetToQueryString(target: GrafanaTarget): string {
   let query: string = 'QUERY API ' + target.apiEndpoints;
 
   query += _namespace(target);
@@ -31,7 +47,7 @@ export function targetToQueryString(target) {
  * Return the "select" statement based on the given target.
  * E.g.: SELECT field, another.field AS myField
  */
-const _queryTypeField = (target: any) => {
+const _queryTypeField = (target: GrafanaTarget) => {
   const fields = _(target.fieldSelectors)
     .flatMap(selector => {
       if (selector.alias) {
@@ -49,7 +65,7 @@ const _queryTypeField = (target: any) => {
  * Return the "aggregation" statement based on the given target.
  * E.g.:  AGGREGATE sum ON field
  */
-const _queryTypeAggregation = (target: any) => {
+const _queryTypeAggregation = (target: GrafanaTarget) => {
   let query: string = ' AGGREGATE ' + target.aggregationType;
 
   if (target.aggregationRequiresTarget) {
@@ -63,7 +79,7 @@ const _queryTypeAggregation = (target: any) => {
  * Return the namespace statement based on the given target.
  * E.g.:  IN NAMESPACE default
  */
-const _namespace = (target: any) => {
+const _namespace = (target: GrafanaTarget) => {
   if (target.namespace === 'default') {
     return '';
   } else {
@@ -75,11 +91,28 @@ const _namespace = (target: any) => {
  * Return the where clause based on the given target.
  * E.g.: WHERE field=value AND status>0
  */
-const _whereClause = (target: any) => {
-  const whereClause = _(target.filterSegments)
-    .filter(segments => segments.length === 3)
-    .filter(segments => !segments[2].fake)
-    .map(s => s[0].value + s[1].value + s[2].value)
+const _whereClause = (target: GrafanaTarget) => {
+  const {clientSideFilters, serverSideFilters} = target;
+
+  const serverFilters = _(serverSideFilters)
+    .map(
+      filter =>
+        (filter.type == ServerSideFilterType.FIELD ? 'fieldSelector' : 'labelSelector') +
+        ':' +
+        filter.key +
+        ' ' +
+        filter.matcher.toUpperCase() +
+        ' ' +
+        filter.value
+    )
+    .value();
+
+  const clientFilters = _(clientSideFilters)
+    .map(filter => filter.key + ' ' + filter.matcher + ' ' + filter.value)
+    .value();
+
+  const whereClause = _([serverFilters, clientFilters])
+    .flatten()
     .join(' AND ');
 
   if (whereClause) {
@@ -93,9 +126,12 @@ const _whereClause = (target: any) => {
  * Return the limit statement based on the given target. If no limit is specified the default limit will be used.
  * E.g.: LIMIT 100
  */
-const _limit = (target: any) => {
-  let queryLimit = target.limit;
-  if (!target.limit) {
+const _limit = (target: GrafanaTarget) => {
+  let queryLimit: number;
+
+  if (target.limit) {
+    queryLimit = _.defaultTo(parseInt(target.limit), DEFAULT_LIMIT);
+  } else {
     // Use a special default limit in aggregation queries
     if (target.queryType === 'aggregation') {
       queryLimit = DEFAULT_AGGREGATION_LIMIT;
@@ -104,7 +140,6 @@ const _limit = (target: any) => {
     }
   }
 
-  queryLimit = _.defaultTo(parseInt(queryLimit), DEFAULT_LIMIT);
   if (queryLimit > 0) {
     return ' LIMIT ' + queryLimit;
   } else {
@@ -112,8 +147,9 @@ const _limit = (target: any) => {
   }
 };
 
-export const extractQueryComponents = (query: string) => {
-  const matchResult = query.match(QUERY_FULL_REG_EXP);
+export const extractQueryComponents = (query: string): QueryComponents | null => {
+  const queryRegExp = new RegExp(QUERY_FULL_REG_EXP, 'i');
+  const matchResult = query.match(queryRegExp);
 
   if (!matchResult) {
     return null;
@@ -130,27 +166,49 @@ export const extractQueryComponents = (query: string) => {
     apiKey: matchResult[1],
     namespace: namespace,
     selectedField: matchResult[4],
-    filters: [],
-    limit: parseInt(matchResult[11])
+    clientFilters: [],
+    serverFilters: [],
+    limit: parseInt(matchResult[25]),
   };
 
   if (matchResult[6] !== undefined) {
-    const filters = Array.from(
-      <string[]>(<any>matchResult[6]).matchAll(QUERY_SINGLE_FILTER_REG_EXP)
-    );
+    const clientFilterRegExp = new RegExp('(\\s|^)' + CLIENT_FILTER_REG_EXP, 'g');
+    const serverFilterRegExp = new RegExp(SERVER_FILTER_REG_EXP, 'gi');
 
-    if (filters !== null) {
-      for (let i in filters) {
-        components.filters.push({
-          key: filters[i][1],
-          matcher: filters[i][2],
-          value: filters[i][3],
-        });
-      }
+    const clientFilters = Array.from(<string[]>(<any>matchResult[6]).matchAll(
+      clientFilterRegExp
+    ));
+
+    const serverFilters = Array.from(<string[]>(<any>matchResult[6]).matchAll(
+      serverFilterRegExp
+    ));
+
+    if (clientFilters !== null) {
+      clientFilters.forEach(filter =>
+        components.clientFilters.push({
+          key: filter[2],
+          matcher: filter[3] === '=' ? '==' : filter[2], // to be downwards compatible
+          value: filter[4],
+        })
+      );
+    }
+
+    if (serverFilters !== null) {
+      serverFilters.forEach(filter =>
+        components.serverFilters.push({
+          type:
+            filter[1] === 'fieldSelector'
+              ? ServerSideFilterType.FIELD
+              : ServerSideFilterType.LABEL,
+          key: filter[2],
+          matcher: filter[3],
+          value: filter[4],
+        })
+      );
     }
   }
 
   return components;
 };
 
-export default { targetToQueryString, extractQueryComponents };
+export default {targetToQueryString, extractQueryComponents};

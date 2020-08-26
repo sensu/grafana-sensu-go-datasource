@@ -11,15 +11,17 @@ import FieldSelector from './FieldSelector';
 import FilterUtils from './utils/datasource_filter_util';
 import QueryUtils from './utils/query_util';
 import transformer from './transformer';
+import ConfigMigration from './utils/config_migration_util';
 
 import {
   PreparedTarget,
   ColumnMapping,
   DataPoint,
-  Filter,
+  ClientSideFilter,
   QueryComponents,
   InstanceSettings,
   QueryOptions,
+  GrafanaTarget,
 } from './types';
 
 export default class SensuDatasource {
@@ -37,19 +39,21 @@ export default class SensuDatasource {
   /**
    * Preprocces the query targets like resolving template variables.
    */
-  prepareQuery = (target, queryOptions) => {
+  prepareQuery = (target: GrafanaTarget, queryOptions) => {
     // resolve API url
     const apiUrl = this._getApiUrl(target);
     // resolve filters
-    const filters = this._getFilters(target, queryOptions);
+    const clientFilters = _.cloneDeep(target.clientSideFilters);
+    const serverFilters = _.cloneDeep(target.serverSideFilters);
 
     const preparedTarget: PreparedTarget = <PreparedTarget>{
-      apiUrl: apiUrl,
-      filters: filters,
+      apiUrl,
+      clientFilters,
+      serverFilters,
       target: _.cloneDeep(target), //ensure modifications are not globally propagated
     };
 
-    this._resolveTargetTemplateVariables(preparedTarget.target, queryOptions);
+    this._resolveTemplateVariables(preparedTarget, queryOptions);
 
     return preparedTarget;
   };
@@ -57,18 +61,33 @@ export default class SensuDatasource {
   /**
    * Resolves template variables in the given prepared target.
    */
-  _resolveTargetTemplateVariables = (target: any, queryOptions) => {
+  _resolveTemplateVariables = (preparedTarget: PreparedTarget, queryOptions) => {
+    const {target, clientFilters, serverFilters} = preparedTarget;
+
+    // resolve variables in namespaces
     const namespaces: string = this.templateSrv
       .replace(target.namespace, queryOptions.scopedVars, 'pipe')
       .split('|');
 
     target.namespace = namespaces;
+
+    // resolve variables in filters
+    [clientFilters, serverFilters].forEach(filters =>
+      filters.forEach(filter => {
+        filter.key = this.templateSrv.replace(filter.key, queryOptions.scopedVars, 'csv');
+        filter.value = this.templateSrv.replace(
+          filter.value,
+          queryOptions.scopedVars,
+          'regex'
+        );
+      })
+    );
   };
 
   /**
    * Returns the url of the API used by the given target.
    */
-  _getApiUrl = target => {
+  _getApiUrl = (target: GrafanaTarget) => {
     const apiEndpoint: any = _.find(API_ENDPOINTS, {value: target.apiEndpoints});
     if (apiEndpoint) {
       return apiEndpoint.url;
@@ -78,33 +97,13 @@ export default class SensuDatasource {
   };
 
   /**
-   * Returns an array of processed filters and resolved variables.
-   */
-  _getFilters = (target, options) => {
-    return _(target.filterSegments)
-      .filter(segmentArray => segmentArray.length === 3)
-      .filter(segmentArray => !segmentArray[2].fake)
-      .map(segmentArray => {
-        return <Filter>{
-          key: this.templateSrv.replace(segmentArray[0].value, options.scopedVars, 'csv'),
-          matcher: segmentArray[1].value,
-          value: this.templateSrv.replace(
-            segmentArray[2].value,
-            options.scopedVars,
-            'regex'
-          ),
-        };
-      })
-      .value();
-  };
-
-  /**
    * Executes a query.
    */
   query(queryOptions) {
-    const queryTargets = _.map(queryOptions.targets, target =>
-      this.prepareQuery(target, queryOptions)
-    );
+    const queryTargets = _(queryOptions.targets)
+      .map(ConfigMigration.migrate)
+      .map(target => this.prepareQuery(target, queryOptions))
+      .value();
 
     // empty result in case there is no query defined
     if (queryTargets.length === 0) {
@@ -114,7 +113,8 @@ export default class SensuDatasource {
     const queries = queryTargets.map(prepTarget => {
       const {
         apiUrl,
-        filters,
+        clientFilters,
+        serverFilters,
         target: {queryType, fieldSelectors, namespace, limit},
       } = prepTarget;
 
@@ -133,24 +133,22 @@ export default class SensuDatasource {
         url: apiUrl,
         namespaces: namespace,
         limit: parsedLimit,
+        responseFilters: serverFilters,
       };
 
-      return (
-        sensu
-          .query(this, queryOptions)
-          //.then((requestResult) => requestResult.data)
-          .then(this._timeCorrection)
-          .then(data => this._filterData(data, filters))
-          .then(data => {
-            if (queryType === 'field') {
-              return this._queryFieldSelection(data, fieldSelectors);
-            } else if (queryType === 'aggregation') {
-              return this._queryAggregation(data, prepTarget);
-            } else {
-              return [];
-            }
-          })
-      );
+      return sensu
+        .query(this, queryOptions)
+        .then(this._timeCorrection)
+        .then(data => this._filterData(data, clientFilters))
+        .then(data => {
+          if (queryType === 'field') {
+            return this._queryFieldSelection(data, fieldSelectors);
+          } else if (queryType === 'aggregation') {
+            return this._queryAggregation(data, prepTarget);
+          } else {
+            return [];
+          }
+        });
     });
 
     return Promise.all(queries).then((queryResults: any) => {
@@ -322,7 +320,7 @@ export default class SensuDatasource {
   /**
    * Returns a filtered representation of the given data.
    */
-  _filterData = (data: any, filters: Filter[]) => {
+  _filterData = (data: any, filters: ClientSideFilter[]) => {
     return _.filter(data, dataElement =>
       _.every(filters, filter => this._matches(dataElement, filter))
     );
@@ -331,12 +329,12 @@ export default class SensuDatasource {
   /**
    * Returns whether the given element matches the given filter.
    */
-  _matches = (element: any, filter: Filter) => {
+  _matches = (element: any, filter: ClientSideFilter) => {
     const filterKey: string = filter.key;
     const matcher: string = filter.matcher;
     const filterValue: string = filter.value;
 
-    let elementValue: any = _.get(element, filterKey);
+    const elementValue: any = _.get(element, filterKey);
 
     return FilterUtils.matchs(filterValue, matcher, elementValue);
   };
@@ -347,11 +345,11 @@ export default class SensuDatasource {
    */
   resolvePaths = (selector: any, data: any) => {
     let selection: any = data;
-    let lastSelector: string = '';
+    let lastSelector = '';
     let basePath = '';
 
     for (let i = 0; i < selector.fieldSegments.length; i++) {
-      let segment: any = selector.fieldSegments[i];
+      const segment: any = selector.fieldSegments[i];
       lastSelector = segment.value;
 
       if (lastSelector !== '*') {
@@ -365,7 +363,7 @@ export default class SensuDatasource {
     }
 
     if (lastSelector === '*') {
-      let paths = this._deepResolve(selection);
+      const paths = this._deepResolve(selection);
       if (basePath === '') {
         return paths;
       } else {
@@ -377,7 +375,7 @@ export default class SensuDatasource {
   };
 
   _deepResolve = data => {
-    let keys: string[] = Object.keys(data);
+    const keys: string[] = Object.keys(data);
 
     return _.flatMap(keys, key => {
       if (_.isPlainObject(data[key])) {
@@ -393,7 +391,7 @@ export default class SensuDatasource {
   /**
    * Executes a query based on the given query command which is a string representation of it.
    */
-  metricFindQuery(query: string, queryOptions?: any) {
+  metricFindQuery(query: string) {
     return this._query(query);
   }
 
@@ -416,31 +414,24 @@ export default class SensuDatasource {
    * Transforms the given query components into an options object which can be used by the `query(..)` function.
    */
   _transformQueryComponentsToQueryOptions = (queryComponents: QueryComponents) => {
-    const {apiKey, selectedField, filters, namespace, limit} = queryComponents;
-
-    const filterObjects = _.map(filters, filter => {
-      return [
-        {
-          value: filter.key,
-        },
-        {
-          value: filter.matcher,
-        },
-        {
-          value: filter.value,
-        },
-      ];
-    });
+    const {
+      apiKey,
+      selectedField,
+      clientFilters,
+      serverFilters,
+      namespace,
+      limit,
+    } = queryComponents;
 
     const options = {
       targets: [
-        {
+        <GrafanaTarget>{
           apiEndpoints: apiKey,
           queryType: 'field',
           namespace: namespace,
-          limit: limit,
+          limit: _.isNaN(limit) ? null : new String(limit),
           fieldSelectors: [
-            {
+            <FieldSelector>{
               fieldSegments: [
                 {
                   value: selectedField,
@@ -448,7 +439,10 @@ export default class SensuDatasource {
               ],
             },
           ],
-          filterSegments: filterObjects,
+          format: 'table',
+          clientSideFilters: clientFilters,
+          serverSideFilters: serverFilters,
+          version: 2,
         },
       ],
     };

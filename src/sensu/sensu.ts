@@ -1,5 +1,10 @@
 import _ from 'lodash';
-import {AccessToken, QueryOptions} from '../types';
+import {
+  AccessToken,
+  QueryOptions,
+  ServerSideFilter,
+  ServerSideFilterType,
+} from '../types';
 
 /**
  * Class which encapsulates the query mechanism against the Sensu Go API.
@@ -33,6 +38,10 @@ export default class Sensu {
   static query(datasource: any, options: QueryOptions) {
     const {namespaces} = options;
 
+    if (_.isEmpty(namespaces) && options.url === '/namespaces') {
+      namespaces.push(''); // dummy element to execute a query
+    }
+
     const queries = _.map(namespaces, namespace =>
       this._doQuery(datasource, options, namespace)
     );
@@ -53,9 +62,9 @@ export default class Sensu {
     datasource: any,
     options: QueryOptions,
     namespace: string,
-    retryCount: number = 0
+    retryCount = 0
   ) {
-    const {method, url, limit} = options;
+    const {method, url} = options;
 
     let fullUrl: string;
     if (url === '/namespaces') {
@@ -65,12 +74,10 @@ export default class Sensu {
       fullUrl = Sensu.apiBaseUrl + namespacePath + url;
     }
 
-    if (limit > 0) {
-      fullUrl += '?limit=' + limit;
-    }
+    const requestParameters = this._getParameters(options);
 
     return Sensu._authenticate(datasource)
-      .then(() => Sensu._request(datasource, method, fullUrl))
+      .then(() => Sensu._request(datasource, method, fullUrl, requestParameters))
       .then(result => result.data)
       .catch(error => {
         // we'll retry once
@@ -119,7 +126,7 @@ export default class Sensu {
    * @param token the token to check
    */
   static _isTokenExpired(token: AccessToken) {
-    let timestampNow: number = Math.floor(Date.now() / 1000);
+    const timestampNow: number = Math.floor(Date.now() / 1000);
     let expiresAt: number = token.expires_at;
 
     if (token.expires_offset) {
@@ -136,10 +143,11 @@ export default class Sensu {
    */
   static _acquireAccessToken(datasource: any) {
     return Sensu._request(datasource, 'GET', '/auth').then(result => {
-      let tokens: AccessToken = result.data;
+      const tokens: AccessToken = result.data;
 
-      let timestampNow: number = Math.floor(Date.now() / 1000);
-      let expiresOffset: number = tokens.expires_at - timestampNow - Sensu.tokenTimeout_s;
+      const timestampNow: number = Math.floor(Date.now() / 1000);
+      const expiresOffset: number =
+        tokens.expires_at - timestampNow - Sensu.tokenTimeout_s;
 
       tokens.expires_offset = expiresOffset;
 
@@ -154,7 +162,12 @@ export default class Sensu {
    * @param method the method of the HTTP request (GET, POST, ...)
    * @param url the url to send the request to
    */
-  static _request(datasource: any, method: string, url: string) {
+  static _request(
+    datasource: any,
+    method: string,
+    url: string,
+    requestParameters: Record<string, string> = {}
+  ) {
     const useApiKey = _.get(datasource.instanceSettings, 'jsonData.useApiKey', false);
 
     const req: any = {
@@ -177,6 +190,8 @@ export default class Sensu {
           'Bearer ' + datasource.instanceSettings.tokens.access_token;
       }
     }
+
+    req.params = requestParameters;
 
     return datasource.backendSrv
       .datasourceRequest(req)
@@ -220,5 +235,50 @@ export default class Sensu {
         };
       }
     }
+  }
+
+  /**
+   * Returns an object which represents the request parameters that should be used
+   * by the request representing the data source query.
+   *
+   * @param options the query options to use as basis for the parameters
+   */
+  static _getParameters(options: QueryOptions) {
+    const {limit, responseFilters} = options;
+    const result: any = {};
+
+    // build the response filter parameters
+    const fieldSelector = this._buildFilterParameter(
+      responseFilters.filter(filter => filter.type === ServerSideFilterType.FIELD)
+    );
+    if (fieldSelector !== '') {
+      result.fieldSelector = fieldSelector;
+    }
+
+    const labelSelector = this._buildFilterParameter(
+      responseFilters.filter(filter => filter.type === ServerSideFilterType.LABEL)
+    );
+    if (labelSelector !== '') {
+      result.labelSelector = labelSelector;
+    }
+
+    // build the limit option
+    if (limit > 0) {
+      result.limit = limit;
+    }
+
+    return result;
+  }
+
+  /**
+   * Creates the parameter value for a response (server-side) filter. More details regarding its
+   * format can be found in the documentation: https://docs.sensu.io/sensu-go/latest/api/#response-filtering
+   *
+   * @param filters the filters which will be included in the filter parameter
+   */
+  static _buildFilterParameter(filters: ServerSideFilter[]) {
+    return _(filters)
+      .map(filter => filter.key + ' ' + filter.matcher + ' ' + filter.value)
+      .join(' && ');
   }
 }

@@ -3,12 +3,12 @@ import {AggregationType, ApiEndpoint, TextValue} from './types';
 /**
  * The default limit.
  */
-export const DEFAULT_LIMIT: number = 100;
+export const DEFAULT_LIMIT = 100;
 
 /**
  * The default limit for aggregation queries.
  */
-export const DEFAULT_AGGREGATION_LIMIT: number = 0;
+export const DEFAULT_AGGREGATION_LIMIT = 0;
 
 /**
  * Supported aggregation functions.
@@ -34,16 +34,42 @@ export const API_ENDPOINTS = <ApiEndpoint[]>[
     text: 'Entity API',
     value: 'entity',
     url: '/entities',
+    fieldSelectors: [
+      // defined by the response filter feature (see: https://docs.sensu.io/sensu-go/latest/api/#response-filtering)
+      'entity.name',
+      'entity.namespace',
+      'entity.deregister',
+      'entity.entity_class',
+      'entity.subscriptions',
+    ],
   },
   {
     text: 'Events API',
     value: 'events',
     url: '/events',
+    fieldSelectors: [
+      'event.is_silenced',
+      'event.name',
+      'event.namespace',
+      'event.check.handlers',
+      'event.check.is_silenced',
+      'event.check.name',
+      'event.check.publish',
+      'event.check.round_robin',
+      'event.check.runtime_assets',
+      'event.check.status',
+      'event.check.subscriptions',
+      'event.entity.deregister',
+      'event.entity.entity_class',
+      'event.entity.name',
+      'event.entity.subscriptions',
+    ],
   },
   {
     text: 'Namespaces API',
     value: 'namespaces',
     url: '/namespaces',
+    fieldSelectors: ['namespace.name'],
   },
 ];
 
@@ -84,4 +110,5 @@ export const TIME_PROPERTIES: string[] = [
   'check.issued',
   'check.last_ok',
   'entity.last_seen',
+  'last_seen',
 ];

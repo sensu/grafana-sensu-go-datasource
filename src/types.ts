@@ -1,3 +1,5 @@
+import FieldSelector from './FieldSelector';
+
 export interface AggregationType {
   readonly value: string;
   readonly text: string;
@@ -8,6 +10,7 @@ export interface ApiEndpoint {
   readonly text: string;
   readonly value: string;
   readonly url: string;
+  readonly fieldSelectors: string[];
 }
 
 export interface ColumnMapping {
@@ -20,10 +23,21 @@ export interface DataPoint {
   readonly name: string;
 }
 
-export interface Filter {
-  readonly key: string;
-  readonly value: string;
-  readonly matcher: string;
+export interface BaseFilter {
+  key: string;
+  value: string;
+  matcher: string;
+}
+
+export type ClientSideFilter = BaseFilter;
+
+export interface ServerSideFilter extends BaseFilter {
+  type: ServerSideFilterType;
+}
+
+export enum ServerSideFilterType {
+  FIELD = 0,
+  LABEL = 1,
 }
 
 export interface InstanceSettings {
@@ -63,7 +77,8 @@ export interface SecureJsonFields {
 
 export interface PreparedTarget {
   readonly apiUrl: string;
-  readonly filters: Filter[];
+  readonly clientFilters: ClientSideFilter[];
+  readonly serverFilters: ServerSideFilter[];
   readonly target: any;
 }
 
@@ -71,7 +86,8 @@ export interface QueryComponents {
   readonly apiKey: string;
   readonly namespace: string;
   readonly selectedField: string;
-  readonly filters: Filter[];
+  readonly clientFilters: ClientSideFilter[];
+  readonly serverFilters: ServerSideFilter[];
   readonly limit: number;
 }
 
@@ -86,6 +102,7 @@ export interface QueryOptions {
   namespaces: string[];
   limit: number;
   forceAccessTokenRefresh?: boolean;
+  responseFilters: ServerSideFilter[];
 }
 
 export interface AccessToken {
@@ -93,4 +110,41 @@ export interface AccessToken {
   readonly expires_at: number;
   readonly refresh_token: string;
   expires_offset?: number;
+}
+
+export interface GrafanaTarget {
+  /** @deprecated */
+  filterSegments?: any[];
+  /** @deprecated */
+  aggregation?: string;
+
+  aggregationAlias?: string;
+  aggregationField?: string;
+  aggregationRequiresTarget?: boolean;
+  aggregationType?: string;
+  apiEndpoints: string;
+  fieldSelectors: FieldSelector[];
+  format: string;
+  limit?: string;
+  namespace: string;
+  queryType: string;
+
+  version: number;
+  clientSideFilters: ClientSideFilter[];
+  serverSideFilters: ServerSideFilter[];
+}
+
+export interface GrafanaUiSegment {
+  value: string;
+}
+
+export interface GrafanaTimeSeries {
+  target: string; // time series name
+  datapoints: unknown[];
+}
+
+export interface GrafanaTable {
+  columns: unknown[];
+  rows: unknown[][];
+  type: string;
 }
