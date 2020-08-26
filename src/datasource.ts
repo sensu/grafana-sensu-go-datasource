@@ -139,7 +139,6 @@ export default class SensuDatasource {
       return (
         sensu
           .query(this, queryOptions)
-          //.then((requestResult) => requestResult.data)
           .then(this._timeCorrection)
           .then(data => this._filterData(data, clientFilters))
           .then(data => {

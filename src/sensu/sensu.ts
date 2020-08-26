@@ -38,11 +38,15 @@ export default class Sensu {
   static query(datasource: any, options: QueryOptions) {
     const {namespaces} = options;
 
-    const queries = _.map(namespaces, namespace =>
+    if (_.isEmpty(namespaces) && options.url === '/namespaces') {
+      namespaces.push(''); // dummy element to execute a query
+    }
+
+    const queries = _.map(namespaces, (namespace) =>
       this._doQuery(datasource, options, namespace)
     );
 
-    return Promise.all(queries).then(data => {
+    return Promise.all(queries).then((data) => {
       return _.flatten(data);
     });
   }
@@ -60,7 +64,7 @@ export default class Sensu {
     namespace: string,
     retryCount: number = 0
   ) {
-    const {method, url, limit} = options;
+    const {method, url} = options;
 
     let fullUrl: string;
     if (url === '/namespaces') {
@@ -70,16 +74,12 @@ export default class Sensu {
       fullUrl = Sensu.apiBaseUrl + namespacePath + url;
     }
 
-    if (limit > 0) {
-      fullUrl += '?limit=' + limit;
-    }
-
     const requestParameters = this._getParameters(options);
 
     return Sensu._authenticate(datasource)
       .then(() => Sensu._request(datasource, method, fullUrl, requestParameters))
-      .then(result => result.data)
-      .catch(error => {
+      .then((result) => result.data)
+      .catch((error) => {
         // we'll retry once
         if (retryCount >= 1) {
           throw error;
@@ -91,7 +91,7 @@ export default class Sensu {
         // the retry is not immediatly done in order to prevent some race conditions
         const delay = Math.floor(1000 + Math.random() * 1000);
 
-        return new Promise(resolve => setTimeout(resolve, delay)).then(() =>
+        return new Promise((resolve) => setTimeout(resolve, delay)).then(() =>
           this._doQuery(datasource, options, namespace, retryCount + 1)
         );
       });
@@ -142,7 +142,7 @@ export default class Sensu {
    * @param datasource the datasource to use
    */
   static _acquireAccessToken(datasource: any) {
-    return Sensu._request(datasource, 'GET', '/auth').then(result => {
+    return Sensu._request(datasource, 'GET', '/auth').then((result) => {
       let tokens: AccessToken = result.data;
 
       let timestampNow: number = Math.floor(Date.now() / 1000);
@@ -237,24 +237,39 @@ export default class Sensu {
   }
 
   static _getParameters(options: QueryOptions) {
+    const {limit, responseFilters} = options;
+    const result: any = {};
+
     // build the response filter parameters
     const fieldSelector = this._buildFilterParameter(
-      options.responseFilters.filter(filter => filter.type === ServerSideFilterType.FIELD)
+      responseFilters.filter(
+        (filter) => filter.type === ServerSideFilterType.FIELD
+      )
     );
+    if (fieldSelector !== '') {
+      result.fieldSelector = fieldSelector;
+    }
 
     const labelSelector = this._buildFilterParameter(
-      options.responseFilters.filter(filter => filter.type === ServerSideFilterType.LABEL)
+      responseFilters.filter(
+        (filter) => filter.type === ServerSideFilterType.LABEL
+      )
     );
+    if (labelSelector !== '') {
+      result.labelSelector = labelSelector;
+    }
 
-    return {
-      fieldSelector,
-      labelSelector,
-    };
+    // build the limit option
+    if (limit > 0) {
+      result.limit = limit;
+    }
+
+    return result;
   }
 
   static _buildFilterParameter(filters: ServerSideFilter[]) {
     return _(filters)
-      .map(filter => filter.key + ' ' + filter.matcher + ' ' + filter.value)
+      .map((filter) => filter.key + ' ' + filter.matcher + ' ' + filter.value)
       .join(' && ');
   }
 }

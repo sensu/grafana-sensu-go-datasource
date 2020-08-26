@@ -211,8 +211,7 @@ export class SensuQueryCtrl extends QueryCtrl {
     })
       .then(result => {
         // get existing namespaces based on query result
-        const namespaceArray = _.get(result, 'data', []);
-        const namespaces = _.map(namespaceArray, namespace => namespace.name);
+        const namespaces = _.map(result, namespace => namespace.name);
 
         // add all option
         namespaces.unshift('*');

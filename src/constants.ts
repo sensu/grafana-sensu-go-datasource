@@ -109,4 +109,5 @@ export const TIME_PROPERTIES: string[] = [
   'check.issued',
   'check.last_ok',
   'entity.last_seen',
+  'last_seen'
 ];
