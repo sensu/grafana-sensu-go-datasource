@@ -221,9 +221,9 @@ export default class Sensu {
    */
   static _handleRequestError(err: any) {
     if (err.status !== 0 || err.status >= 300) {
-      if (err.data && err.data.error) {
+      if (err.data && err.data.message) {
         throw {
-          message: 'Sensu Go Error: ' + err.data.error,
+          message: 'Sensu Go Error: ' + err.data.message,
           data: err.data,
           config: err.config,
         };
