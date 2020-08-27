@@ -255,10 +255,18 @@ export class SensuQueryCtrl extends QueryCtrl {
   };
 
   /**
-   * Called if the api is changing.
+   * Called when the api is changing.
    */
   onApiChange = () => {
     this._reset();
+    this.panelCtrl.refresh();
+  };
+
+  /**
+   * Called when the query type is changing.
+   */
+  onQueryTypeChange = () => {
+    this._resetAggregation();
     this.panelCtrl.refresh();
   };
 

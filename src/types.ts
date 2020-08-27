@@ -79,7 +79,7 @@ export interface PreparedTarget {
   readonly apiUrl: string;
   readonly clientFilters: ClientSideFilter[];
   readonly serverFilters: ServerSideFilter[];
-  readonly target: any;
+  readonly target: GrafanaTarget;
 }
 
 export interface QueryComponents {
@@ -127,6 +127,7 @@ export interface GrafanaTarget {
   format: string;
   limit?: string;
   namespace: string;
+  namespaces: string[]; // splitted and resolved namespace attribute
   queryType: string;
 
   version: number;
