@@ -1,14 +1,27 @@
 import _ from 'lodash';
 import {DEFAULT_LIMIT, DEFAULT_AGGREGATION_LIMIT} from '../constants';
 
-import {QueryComponents, GrafanaTarget, ServerSideFilterType} from '../types';
+import {
+  QueryComponents,
+  GrafanaTarget,
+  ServerSideFilterType,
+  ServerSideFilter,
+  ClientSideFilter,
+} from '../types';
 
 /** RegEx matching a in-browser filter of the WHERE-clause. */
-const CLIENT_FILTER_REG_EXP = '([^\\s:=]+)\\s*(==|=~|!=|>|<|!~|=)\\s*(\\S+)';
+const CLIENT_FILTER_REG_EXP = '([^\\s:=!]+)\\s*(==|=~|!=|>|<|!~|=)\\s*(\\S+)';
+
+/** RegExp of a filter key or value of the server-side filter. */
+const SERVER_FILTER_VALUE_REG_EXP = '\\[[^[]+\\]|"[^"]+"|\\S+';
 
 /** RegEx matching a response filter (server-side) of the WHERE-clause. */
 const SERVER_FILTER_REG_EXP =
-  '(fieldSelector|labelSelector):(\\S+)\\s*(==|!=|IN|NOTIN|MATCHES)\\s*(\\[[^[]+\\]|"[^"]+"|\\S+)';
+  '(fieldSelector|labelSelector):(' +
+  SERVER_FILTER_VALUE_REG_EXP +
+  ')\\s*(==|!=|IN|NOTIN|MATCHES)\\s*(' +
+  SERVER_FILTER_VALUE_REG_EXP +
+  ')';
 
 /** RegEx representing a single element of the WHERE-clause. */
 const QUERY_SINGLE_FILTER_REG_EXP =
@@ -172,39 +185,40 @@ export const extractQueryComponents = (query: string): QueryComponents | null =>
   };
 
   if (matchResult[6] !== undefined) {
-    const clientFilterRegExp = new RegExp('(\\s|^)' + CLIENT_FILTER_REG_EXP, 'g');
-    const serverFilterRegExp = new RegExp(SERVER_FILTER_REG_EXP, 'gi');
+    const filterRegExp = new RegExp(
+      SERVER_FILTER_REG_EXP + '|' + CLIENT_FILTER_REG_EXP,
+      'gi'
+    );
 
-    const clientFilters = Array.from(<string[]>(<any>matchResult[6]).matchAll(
-      clientFilterRegExp
-    ));
+    const whereClause: string = matchResult[6];
 
-    const serverFilters = Array.from(<string[]>(<any>matchResult[6]).matchAll(
-      serverFilterRegExp
-    ));
+    let match: RegExpExecArray | null;
+    while ((match = filterRegExp.exec(whereClause)) !== null) {
+      const isServerFilter = match[1] !== undefined;
 
-    if (clientFilters !== null) {
-      clientFilters.forEach(filter =>
-        components.clientFilters.push({
-          key: filter[2],
-          matcher: filter[3] === '=' ? '==' : filter[2], // to be downwards compatible
-          value: filter[4],
-        })
-      );
-    }
-
-    if (serverFilters !== null) {
-      serverFilters.forEach(filter =>
-        components.serverFilters.push({
+      if (isServerFilter) {
+        // add response filter
+        const filter: ServerSideFilter = {
           type:
-            filter[1] === 'fieldSelector'
+            match[1] === 'fieldSelector'
               ? ServerSideFilterType.FIELD
               : ServerSideFilterType.LABEL,
-          key: filter[2],
-          matcher: filter[3],
-          value: filter[4],
-        })
-      );
+          key: match[2],
+          matcher: match[3],
+          value: match[4],
+        };
+
+        components.serverFilters.push(filter);
+      } else {
+        // add in-browser filter
+        const filter: ClientSideFilter = {
+          key: match[5],
+          matcher: match[6] === '=' ? '==' : match[6],
+          value: match[7],
+        };
+
+        components.clientFilters.push(filter);
+      }
     }
   }
 
