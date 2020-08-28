@@ -170,7 +170,18 @@ Since data source version `1.1.0`, it is also supported to query all namespaces 
 If it is desired that all namespaces can be queried using a template variable, the variable's "All"-option must be adapted.
 This can be achieved by enabling the `Include All option` option and set the value of the `Custom all value` option to `*`.
 
-![API key configuration in the Sensu So Data Source](/images/all-namespaces-variable.png)
+![Configuration of a namespace template variable with custom All-option.](/images/all-namespaces-variable.png)
+
+### Data Aggregation and Group-By
+
+The data source is able to aggregate the data which is returned by the Sensu Go backend server.
+Currently, a `count` and `sum` aggregation is supported. The `count` aggregation counts all elements in the data set, whereas the `sum` aggregation calculates the sum of a specific attribute.
+
+Since version 1.1.0 the data source also supports a grouping of the data. Thus an aggregation can be made with respect to a certain attribute. For example, in the following screenshot we get the count of elements in all namespaces, splitted by their `entity_class`.
+
+![Splitting the aggregation result based on a specific attribute.](/images/group-by.png)
+
+> Note that many panels require a _time series_ format.
 
 ## Contributing
 

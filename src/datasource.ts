@@ -12,6 +12,7 @@ import FilterUtils from './utils/datasource_filter_util';
 import QueryUtils from './utils/query_util';
 import transformer from './transformer';
 import ConfigMigration from './utils/config_migration_util';
+import AggregationUtils from './utils/data_aggregation_util';
 
 import {
   PreparedTarget,
@@ -65,11 +66,11 @@ export default class SensuDatasource {
     const {target, clientFilters, serverFilters} = preparedTarget;
 
     // resolve variables in namespaces
-    const namespaces: string = this.templateSrv
+    const namespaces: string[] = this.templateSrv
       .replace(target.namespace, queryOptions.scopedVars, 'pipe')
       .split('|');
 
-    target.namespace = namespaces;
+    target.namespaces = namespaces;
 
     // resolve variables in filters
     [clientFilters, serverFilters].forEach(filters =>
@@ -115,11 +116,11 @@ export default class SensuDatasource {
         apiUrl,
         clientFilters,
         serverFilters,
-        target: {queryType, fieldSelectors, namespace, limit},
+        target: {queryType, fieldSelectors, namespaces, limit},
       } = prepTarget;
 
       // verify and set correct limit
-      let parsedLimit: number = _.defaultTo(parseInt(limit), -1);
+      let parsedLimit: number = _.defaultTo(parseInt(limit || ''), -1);
       if (parsedLimit < 0) {
         if (queryType === 'aggregation') {
           parsedLimit = DEFAULT_AGGREGATION_LIMIT;
@@ -131,7 +132,7 @@ export default class SensuDatasource {
       const queryOptions: QueryOptions = {
         method: 'GET',
         url: apiUrl,
-        namespaces: namespace,
+        namespaces,
         limit: parsedLimit,
         responseFilters: serverFilters,
       };
@@ -144,7 +145,7 @@ export default class SensuDatasource {
           if (queryType === 'field') {
             return this._queryFieldSelection(data, fieldSelectors);
           } else if (queryType === 'aggregation') {
-            return this._queryAggregation(data, prepTarget);
+            return this._queryGroupAndAggregate(data, prepTarget);
           } else {
             return [];
           }
@@ -209,44 +210,90 @@ export default class SensuDatasource {
   };
 
   /**
+   * This function will group the given data (if specified in the PreparedTarget) and aggregate it accordingly.
+   *
+   * @param data the data to group and aggregate
+   * @param prepTarget the settings for the grouping and aggregation
+   */
+  _queryGroupAndAggregate = (data: any[], prepTarget: PreparedTarget) => {
+    const {
+      target: {
+        aggregationAlias: alias,
+        aggregationType: type,
+        format,
+        groupBy: groupAttribute,
+      },
+    } = prepTarget;
+    // the name of the result value (the metric name if timeseries format is used, otherwise the column header)
+    const name = alias ? alias : type || 'value';
+
+    if (!groupAttribute) {
+      // just aggregate without grouping
+      const aggregationResult = this._queryAggregation(data, name, prepTarget);
+      return [aggregationResult];
+    } else {
+      // first group the data..
+      const groups = _.groupBy(data, groupAttribute);
+
+      // ..then aggregate the individual groups
+      const groupResult = _(groups)
+        .map((dataGroup, groupKey) =>
+          this._queryAggregation(dataGroup, groupKey, prepTarget)
+        )
+        .value();
+
+      if (format === 'table' && groupResult) {
+        // we transform the groups into multiple columns in case the table format is used
+        return this._mergeTableAggregation(groupResult, groupAttribute, name);
+      } else {
+        return groupResult;
+      }
+    }
+  };
+
+  /**
+   * We merge the seperate aggregation result into a single one, thus we get a nicer visualization
+   * in the table panel, where the group-attribute and value have their own column.
+   */
+  _mergeTableAggregation = (
+    groupData: (DataPoint[] | null)[],
+    groupByAttribute: string,
+    alias: string
+  ) => {
+    return _(groupData)
+      .map(group => {
+        if (!group || group.length == 0) {
+          return null;
+        }
+        const point: DataPoint = group[0];
+        return [
+          {
+            name: groupByAttribute,
+            value: point.name,
+          },
+          {
+            name: alias,
+            value: point.value,
+          },
+        ];
+      })
+      .filter() // null values
+      .value();
+  };
+
+  /**
    * Process the data if the query type is 'aggregation'.
    */
-  _queryAggregation = (data: any[], prepTarget: PreparedTarget) => {
-    const {
-      target: {aggregationAlias: alias, aggregationType: type, aggregationField: field},
-    } = prepTarget;
-    const name = alias ? alias : type;
+  _queryAggregation = (data: any[], name: string, prepTarget: PreparedTarget) => {
+    const {aggregationType: type} = prepTarget.target;
 
     if (type === 'count') {
-      return <DataPoint[][]>[
-        [
-          {
-            name: name,
-            value: data.length,
-          },
-        ],
-      ];
+      return AggregationUtils.count(data, name);
     } else if (type === 'sum') {
-      if (!field) {
-        return [];
-      } else {
-        const result: number = _.sumBy(data, field);
-
-        if (_.isFinite(result)) {
-          return <DataPoint[][]>[
-            [
-              {
-                name: name,
-                value: result,
-              },
-            ],
-          ];
-        } else {
-          return [];
-        }
-      }
+      const {aggregationField} = prepTarget.target;
+      return AggregationUtils.sum(data, name, aggregationField);
     } else {
-      return [];
+      throw new Error('The aggreation type "' + type + '" is not supported.');
     }
   };
 

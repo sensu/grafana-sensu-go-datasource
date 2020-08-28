@@ -35,6 +35,7 @@ export class SensuQueryCtrl extends QueryCtrl {
   apiEndpoints: ApiEndpoint[] = API_ENDPOINTS; // used in the partial
   addFieldSegment: any;
   namespaceSegment: any;
+  groupBySegment: any;
 
   clientFilterSegments: any[] = [];
   serverFilterSegments: any[] = [];
@@ -106,6 +107,14 @@ export class SensuQueryCtrl extends QueryCtrl {
     } else {
       this.segmentAggregationTarget = this.uiSegmentSrv.newSegment({
         value: this.target.aggregationField,
+      });
+    }
+
+    if (this.target.groupBy === undefined) {
+      this.groupBySegment = this.uiSegmentSrv.newPlusButton();
+    } else {
+      this.groupBySegment = this.uiSegmentSrv.newSegment({
+        value: this.target.groupBy,
       });
     }
 
@@ -187,6 +196,8 @@ export class SensuQueryCtrl extends QueryCtrl {
     delete this.target.aggregationAlias;
     delete this.target.aggregationField;
 
+    this.removeGroupBy();
+
     this.segmentAggregationTarget = this.uiSegmentSrv.newFake(
       'select target attribute',
       'value',
@@ -195,7 +206,7 @@ export class SensuQueryCtrl extends QueryCtrl {
   };
 
   /**
-   * Returns selectable options for the aggregation field segment.
+   * Returns selectable options (all existing keys) for the aggregation field segment.
    */
   getTargetOptions = () => {
     const options: string[] = this.getAllDeepKeys();
@@ -204,6 +215,35 @@ export class SensuQueryCtrl extends QueryCtrl {
     );
 
     return this.$q.when(segments);
+  };
+
+  /**
+   * Returns selectable options (all existing keys) for the group-by segment.
+   */
+  getGroupByOptions = () => {
+    const options: string[] = this.getAllDeepKeys();
+    const segments: any[] = _.map(options, option =>
+      this.uiSegmentSrv.newSegment({value: option})
+    );
+
+    return this.$q.when(segments);
+  };
+
+  /**
+   * Called when the user changes the groupBy attribute.
+   */
+  onGroupByChange = () => {
+    this.target.groupBy = this.groupBySegment.value;
+    this.panelCtrl.refresh();
+  };
+
+  /**
+   * Removes the groupBy attribute.
+   */
+  removeGroupBy = () => {
+    this.groupBySegment = this.uiSegmentSrv.newPlusButton();
+    delete this.target.groupBy;
+    this.panelCtrl.refresh();
   };
 
   /**
@@ -255,10 +295,18 @@ export class SensuQueryCtrl extends QueryCtrl {
   };
 
   /**
-   * Called if the api is changing.
+   * Called when the api is changing.
    */
   onApiChange = () => {
     this._reset();
+    this.panelCtrl.refresh();
+  };
+
+  /**
+   * Called when the query type is changing.
+   */
+  onQueryTypeChange = () => {
+    this._resetAggregation();
     this.panelCtrl.refresh();
   };
 
