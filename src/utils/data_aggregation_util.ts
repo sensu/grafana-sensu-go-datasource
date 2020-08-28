@@ -1,6 +1,12 @@
 import _ from 'lodash';
 import {DataPoint} from '../types';
 
+/**
+ * Does a count aggregation. The number of elements in the given data is returned.
+ *
+ * @param data the data to aggregate
+ * @param name  the name of the resulting value
+ */
 const count = (data: any[], name: string): DataPoint[] => {
   return <DataPoint[]>[
     {
@@ -10,6 +16,13 @@ const count = (data: any[], name: string): DataPoint[] => {
   ];
 };
 
+/**
+ * Does a sum aggregation. The sum of the specified attribute of all elements in the given data is calculated.
+ *
+ * @param data  the data to aggregate
+ * @param name the name of the resulting value
+ * @param targetField  the field which should be summed up
+ */
 const sum = (
   data: any[],
   name: string,
