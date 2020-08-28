@@ -30,7 +30,8 @@ export class SensuQueryCtrl extends QueryCtrl {
   readonly formats: TextValue[] = FORMATS;
 
   segmentAggregationTarget: any;
-  dataPreview: any;
+  dataPreview: any = {};
+  dataPreviewBuffer: any[] = [];
 
   apiEndpoints: ApiEndpoint[] = API_ENDPOINTS; // used in the partial
   addFieldSegment: any;
@@ -243,6 +244,7 @@ export class SensuQueryCtrl extends QueryCtrl {
   removeGroupBy = () => {
     this.groupBySegment = this.uiSegmentSrv.newPlusButton();
     delete this.target.groupBy;
+    delete this.target.groupAlias;
     this.panelCtrl.refresh();
   };
 
@@ -592,7 +594,14 @@ export class SensuQueryCtrl extends QueryCtrl {
   };
 
   onDataReceived = () => {
-    //TODO
+    if (this.dataPreviewBuffer.length > 0) {
+      // this is done so that we get the response from all querys. otherwise the last query could override the
+      // data which we need
+      //
+      // TODO only store the data related to the current query
+      this.dataPreview = _.flatten(this.dataPreviewBuffer);
+      this.dataPreviewBuffer = [];
+    }
   };
 
   /**
@@ -600,13 +609,13 @@ export class SensuQueryCtrl extends QueryCtrl {
    */
   onResponseReceived = response => {
     if (!response.config.url.endsWith('/auth')) {
-      this.dataPreview = response.data;
+      this.dataPreviewBuffer.push(response.data);
     }
   };
 
   onRefresh = () => {
     //TODO
-    this.dataPreview = '';
+    this.dataPreview = {};
   };
 
   /**

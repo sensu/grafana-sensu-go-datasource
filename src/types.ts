@@ -125,11 +125,13 @@ export interface GrafanaTarget {
   apiEndpoints: string;
   fieldSelectors: FieldSelector[];
   format: string;
+  groupAlias?: string;
   groupBy?: string;
   limit?: string;
   namespace: string;
   namespaces: string[]; // splitted and resolved namespace attribute
   queryType: string;
+  refId: string;
 
   version: number;
   clientSideFilters: ClientSideFilter[];

@@ -139,6 +139,12 @@
     
     <metric-segment ng-repeat="segment in [ctrl.groupBySegment]" segment="segment" get-options="ctrl.getGroupByOptions()" on-change="ctrl.onGroupByChange()"></metric-segment>
 
+    <div class="gf-form" ng-show="ctrl.target.groupBy">
+      <label class="gf-form-label query-keyword width-3">AS</label>
+      <input type="text" placeholder="alias" class="gf-form-input width-6" ng-model="ctrl.target.groupAlias"
+        ng-change="ctrl.refresh()" ng-model-options="{updateOn: 'blur'}">
+    </div>
+
     <a ng-show="ctrl.target.groupBy" class="gf-form-label tight-form-func" ng-click="ctrl.removeGroupBy()"><i class="fa fa-trash"></i></a>
 
     <div class="gf-form gf-form--grow">

@@ -243,8 +243,13 @@ export default class SensuDatasource {
         .value();
 
       if (format === 'table' && groupResult) {
+        const {groupAlias} = prepTarget.target;
         // we transform the groups into multiple columns in case the table format is used
-        return this._mergeTableAggregation(groupResult, groupAttribute, name);
+        return this._mergeTableAggregation(
+          groupResult,
+          groupAlias || groupAttribute,
+          name
+        );
       } else {
         return groupResult;
       }
