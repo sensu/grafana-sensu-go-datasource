@@ -183,6 +183,15 @@ Since version 1.1.0 the data source also supports a grouping of the data. Thus a
 
 > Note that many panels require a _time series_ format.
 
+## Sample Dashboards
+
+If you don't want to create your own dashboard or just want to test the data source quickly, you can use one of the sample dashboards.
+The sample dashboards are located in the "x" folder and can be used with Grafana version 6.0.0 and higher.
+
+Some of the sample dashboards use the pie chart panel, which is only included in Grafana from version 7 on, but can also be [installed into an earlier version via the marketplace](https://grafana.com/grafana/plugins/grafana-piechart-panel).
+
+![Screenshot of a sample dashboard using the Sensu Go data source.](/images/demo-dashboard-01.png)
+
 ## Contributing
 
 ### Local development
