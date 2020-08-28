@@ -177,11 +177,26 @@ This can be achieved by enabling the `Include All option` option and set the val
 The data source is able to aggregate the data which is returned by the Sensu Go backend server.
 Currently, a `count` and `sum` aggregation is supported. The `count` aggregation counts all elements in the data set, whereas the `sum` aggregation calculates the sum of a specific attribute.
 
+> Note that the aggregation is done in the browser by the data source! In combination with a limit, it can lead to misleading results, because only a subset of the data is used.
+
 Since version 1.1.0 the data source also supports a grouping of the data. Thus an aggregation can be made with respect to a certain attribute. For example, in the following screenshot we get the count of elements in all namespaces, splitted by their `entity_class`.
 
 ![Splitting the aggregation result based on a specific attribute.](/images/group-by.png)
 
 > Note that many panels require a _time series_ format.
+
+## Sample Dashboards
+
+If you don't want to create your own dashboard or just want to test the data source quickly, you can use one of the sample dashboards.
+The sample dashboards are located in the "x" folder and can be used with Grafana version 6.0.0 and higher.
+
+Some of the sample dashboards use the pie chart panel, which is only included in Grafana from version 7 on, but can also be [installed into an earlier version via the marketplace](https://grafana.com/grafana/plugins/grafana-piechart-panel).
+
+* Sample Dashboard 01
+  ![Screenshot of a sample dashboard 01 using the Sensu Go data source.](/images/demo-dashboard-01.png)
+
+* Sample Dashboard 02
+  ![Screenshot of a sample dashboard 02 using the Sensu Go data source.](/images/demo-dashboard-02.png)
 
 ## Contributing
 
