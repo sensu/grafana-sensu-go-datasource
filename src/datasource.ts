@@ -209,54 +209,81 @@ export default class SensuDatasource {
     return data;
   };
 
+  /**
+   * This function will group the given data (if specified in the PreparedTarget) and aggregate it accordingly.
+   *
+   * @param data the data to group and aggregate
+   * @param prepTarget the settings for the grouping and aggregation
+   */
   _queryGroupAndAggregate = (data: any[], prepTarget: PreparedTarget) => {
-    const {target: {aggregationAlias: alias, aggregationType: type, format}} = prepTarget;
+    const {
+      target: {
+        aggregationAlias: alias,
+        aggregationType: type,
+        format,
+        groupBy: groupAttribute,
+      },
+    } = prepTarget;
+    // the name of the result value (the metric name if timeseries format is used, otherwise the column header)
     const name = alias ? alias : type || 'value';
 
-    // if (1 == 1) {
-    //   return [this._queryAggregation(data, name, prepTarget)];
-    // } else {
-    const groupAttribute = 'metadata.namespace';
-
-    const groups = _.groupBy(data, groupAttribute);
-
-    const groupResult = _(groups)
-      .map((dataGroup, groupKey) =>
-        this._queryAggregation(dataGroup, groupKey, prepTarget)
-      )
-      .value();
-
-    if (format === 'table') {
-      // we transform the groups into multiple columns in case the table format is used
-      return _(groupResult)
-        .map(group => {
-          if (!group || group.length == 0) {
-            return null;
-          }
-          const point: DataPoint = group[0];
-          return [
-            {
-              name: groupAttribute,
-              value: point.name,
-            },
-            {
-              name,
-              value: point.value,
-            },
-          ];
-        })
-        .filter() // null values
-        .value();
+    if (!groupAttribute) {
+      // just aggregate without grouping
+      const aggregationResult = this._queryAggregation(data, name, prepTarget);
+      return [aggregationResult];
     } else {
-      return groupResult;
+      // first group the data..
+      const groups = _.groupBy(data, groupAttribute);
+
+      // ..then aggregate the individual groups
+      const groupResult = _(groups)
+        .map((dataGroup, groupKey) =>
+          this._queryAggregation(dataGroup, groupKey, prepTarget)
+        )
+        .value();
+
+      if (format === 'table' && groupResult) {
+        // we transform the groups into multiple columns in case the table format is used
+        return this._mergeTableAggregation(groupResult, groupAttribute, name);
+      } else {
+        return groupResult;
+      }
     }
-    // }
+  };
+
+  /**
+   * We merge the seperate aggregation result into a single one, thus we get a nicer visualization
+   * in the table panel, where the group-attribute and value have their own column.
+   */
+  _mergeTableAggregation = (
+    groupData: (DataPoint[] | null)[],
+    groupByAttribute: string,
+    alias: string
+  ) => {
+    return _(groupData)
+      .map(group => {
+        if (!group || group.length == 0) {
+          return null;
+        }
+        const point: DataPoint = group[0];
+        return [
+          {
+            name: groupByAttribute,
+            value: point.name,
+          },
+          {
+            name: alias,
+            value: point.value,
+          },
+        ];
+      })
+      .filter() // null values
+      .value();
   };
 
   /**
    * Process the data if the query type is 'aggregation'.
    */
-  //_queryAggregation = (data: any[], prepTarget: PreparedTarget) => {
   _queryAggregation = (data: any[], name: string, prepTarget: PreparedTarget) => {
     const {aggregationType: type} = prepTarget.target;
 

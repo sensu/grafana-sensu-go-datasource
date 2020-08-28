@@ -125,6 +125,7 @@ export interface GrafanaTarget {
   apiEndpoints: string;
   fieldSelectors: FieldSelector[];
   format: string;
+  groupBy?: string;
   limit?: string;
   namespace: string;
   namespaces: string[]; // splitted and resolved namespace attribute

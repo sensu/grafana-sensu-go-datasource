@@ -133,6 +133,19 @@
     </div>
   </div>
 
+  <!-- GROUP BY -->
+  <div class="gf-form-inline" ng-show="ctrl.target.queryType == 'aggregation'">
+    <label class="gf-form-label query-keyword width-12">GROUP BY</label>
+    
+    <metric-segment ng-repeat="segment in [ctrl.groupBySegment]" segment="segment" get-options="ctrl.getGroupByOptions()" on-change="ctrl.onGroupByChange()"></metric-segment>
+
+    <a ng-show="ctrl.target.groupBy" class="gf-form-label tight-form-func" ng-click="ctrl.removeGroupBy()"><i class="fa fa-trash"></i></a>
+
+    <div class="gf-form gf-form--grow">
+      <div class="gf-form-label gf-form-label--grow"></div>
+    </div>
+  </div>
+
   <!-- LIMIT -->
   <div class="gf-form-inline">
     <label class="gf-form-label query-keyword width-12">
