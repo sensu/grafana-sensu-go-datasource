@@ -1,7 +1,7 @@
 <p>
   <a href="https://www.sensu.io/">
     <img alt="Sensu hearts Grafana"
-      src="/images/sensu-heart-grafana.png"
+      src="https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/sensu-heart-grafana.png"
       width="300"
     />
   </a>
@@ -57,7 +57,7 @@ To configure the Sensu Go Data Source:
      * **Check the option for Basic Auth**.
      * **Add a Sensu username and password** with get and list permissions for entities, events, and namespaces (default admin user: username `admin`, password `P@ssw0rd!`). For more information about creating a Sensu cluster role, see the [Sensu docs][5].
      <img alt="Grafana user interface showing the configuration settings for the Sensu Go Data Source"
-  src="/images/configure-data-source.png"
+  src="https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/configure-data-source.png"
   width="750"
 />
    * **API Key Auth**
@@ -67,7 +67,7 @@ To configure the Sensu Go Data Source:
 
 3. Select Save & Test. You should see a banner confirming that Grafana is connected to Sensu Go.
    <img alt="Confirmation banner with the message: Successfully connected against the Sensu Go API"
-  src="/images/configure-success.png"
+  src="https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/configure-success.png"
   width="750"
 />
 
@@ -78,7 +78,7 @@ See the Sensu docs to learn about available attributes for [entities][6], [event
 To learn more about building dashboards, see the [Grafana docs][9].
 
 <img alt="Grafana user interface showing the query builder with Sensu Go and the Entity API selected"
-  src="/images/build-query.png"
+  src="https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/build-query.png"
   width="750"
 />
 
@@ -170,7 +170,7 @@ Since data source version `1.1.0`, it is also supported to query all namespaces 
 If it is desired that all namespaces can be queried using a template variable, the variable's "All"-option must be adapted.
 This can be achieved by enabling the `Include All option` option and set the value of the `Custom all value` option to `*`.
 
-![Configuration of a namespace template variable with custom All-option.](/images/all-namespaces-variable.png)
+![Configuration of a namespace template variable with custom All-option.](https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/all-namespaces-variable.png)
 
 ### Data Aggregation and Group-By
 
@@ -181,7 +181,7 @@ Currently, a `count` and `sum` aggregation is supported. The `count` aggregation
 
 Since version 1.1.0 the data source also supports a grouping of the data. Thus an aggregation can be made with respect to a certain attribute. For example, in the following screenshot we get the count of elements in all namespaces, splitted by their `entity_class`.
 
-![Splitting the aggregation result based on a specific attribute.](/images/group-by.png)
+![Splitting the aggregation result based on a specific attribute.](https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/group-by.png)
 
 > Note that many panels require a _time series_ format.
 
@@ -193,10 +193,16 @@ The sample dashboards are located in the "x" folder and can be used with Grafana
 Some of the sample dashboards use the pie chart panel, which is only included in Grafana from version 7 on, but can also be [installed into an earlier version via the marketplace](https://grafana.com/grafana/plugins/grafana-piechart-panel).
 
 * Sample Dashboard 01
-  ![Screenshot of a sample dashboard 01 using the Sensu Go data source.](/images/demo-dashboard-01.png)
+  ![Screenshot of a sample dashboard 01 using the Sensu Go data source.](https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/demo-dashboard-01.png)
 
 * Sample Dashboard 02
-  ![Screenshot of a sample dashboard 02 using the Sensu Go data source.](/images/demo-dashboard-02.png)
+  ![Screenshot of a sample dashboard 02 using the Sensu Go data source.](https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/demo-dashboard-02.png)
+
+* _Event Overview_ & _Event Details_
+
+  These dashboards can be used to visualize events existing in selected namespaces.
+  Furthermore, the dashboards are linked together, thus, from the overview dashboard you can drill down into events and see more information about it. Please note, that the table's link has to be adjusted in case the name or id of the dashboard is changed.
+  ![Screenshot of the event overview dashboard.](https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/event-overview.png)
 
 ## Contributing
 
