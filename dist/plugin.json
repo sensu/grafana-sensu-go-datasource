@@ -2,6 +2,7 @@
   "type": "datasource",
   "name": "Sensu Go",
   "id": "sensu-sensugo-datasource",
+  "defaultMatchFormat": "regex values",
   "metrics": true,
   "annotations": false,
   "alerting": false,
@@ -16,14 +17,11 @@
       "small": "img/sensu_logo.png",
       "large": "img/sensu_logo.png"
     },
-    "version": "%VERSION%",
-    "updated": "%TODAY%",
-    "screenshots": [{"name": "bar", "path": "images/ds-query-editor.png"}]
+    "version": "1.0.2",
+    "updated": "2020-08-31"
   },
   "dependencies": {
-    "grafanaVersion": "6.0.0",
-    "grafanaDependency": ">=6.0.0",
-    "plugins": []
+    "grafanaVersion": "6.0.0"
   },
   "routes": [
     {
