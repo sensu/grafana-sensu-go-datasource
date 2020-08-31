@@ -18,7 +18,9 @@
     },
     "version": "%VERSION%",
     "updated": "%TODAY%",
-    "screenshots": [{"name": "bar", "path": "images/ds-query-editor.png"}]
+    "screenshots": [
+      {"name": "Query Editor screenshot", "path": "img/ds-query-editor.png"}
+    ]
   },
   "dependencies": {
     "grafanaVersion": "6.0.0",

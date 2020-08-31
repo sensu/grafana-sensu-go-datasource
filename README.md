@@ -63,7 +63,7 @@ To configure the Sensu Go Data Source:
    * **API Key Auth**
      * **Enable the option for the usage of an API key**.
      * **Enter the API key which you want to use**. See the Sensu Go documentation for information on [how to create an API key][api_key_doc].
-       ![API key configuration in the Sensu So Data Source](/images/configure-api-key.png)
+       ![API key configuration in the Sensu So Data Source](https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/configure-api-key.png)
 
 3. Select Save & Test. You should see a banner confirming that Grafana is connected to Sensu Go.
    <img alt="Confirmation banner with the message: Successfully connected against the Sensu Go API"
