@@ -244,6 +244,8 @@ release-it [--no-git.requireCleanWorkingDir]
 
 Running `release-it` creates a `releases` directory containing the built zip archive.
 
+Please note that this repository contains a built version of the data source in its `dist` directory which is also a requirement for the Grafana's marketplace. Therefore it is important to keep this folder up to date using the "build" command before committing a change.
+
 [1]: https://grafana.com/docs/plugins/
 [2]: https://github.com/sensu/grafana-sensu-go-datasource/releases
 [3]: https://grafana.com/docs/plugins/installation/
