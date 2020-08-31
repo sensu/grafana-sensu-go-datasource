@@ -102,6 +102,7 @@ export default class SensuDatasource {
    */
   query(queryOptions) {
     const queryTargets = _(queryOptions.targets)
+      .filter(target => !target.hide)
       .map(ConfigMigration.migrate)
       .map(target => this.prepareQuery(target, queryOptions))
       .value();

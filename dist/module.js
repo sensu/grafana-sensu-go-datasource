@@ -683,6 +683,9 @@ define(['lodash', 'moment', 'app/core/app_events', 'app/plugins/sdk'], function(
             (e.prototype.query = function(e) {
               var t = this,
                 r = u()(e.targets)
+                  .filter(function(e) {
+                    return !e.hide;
+                  })
                   .map(w)
                   .map(function(r) {
                     return t.prepareQuery(r, e);
