@@ -96,6 +96,10 @@ export const FORMATS = <TextValue[]>[
     text: 'Table',
   },
   {
+    value: 'table-v',
+    text: 'Table (Vertical)',
+  },
+  {
     value: 'series',
     text: 'Time Series',
   },

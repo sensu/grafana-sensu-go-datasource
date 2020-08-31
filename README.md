@@ -198,6 +198,12 @@ Some of the sample dashboards use the pie chart panel, which is only included in
 * Sample Dashboard 02
   ![Screenshot of a sample dashboard 02 using the Sensu Go data source.](/images/demo-dashboard-02.png)
 
+* _Event Overview_ & _Event Details_
+
+  These dashboards can be used to visualize events existing in selected namespaces.
+  Furthermore, the dashboards are linked together, thus, from the overview dashboard you can drill down into events and see more information about it. Please note, that the table's link has to be adjusted in case the name or id of the dashboard is changed.
+  ![Screenshot of the event overview dashboard.](/images/event-overview.png)
+
 ## Contributing
 
 ### Local development
