@@ -156,7 +156,7 @@ export default class SensuDatasource {
       if (queryOptions.resultAsPlainArray) {
         // return only values - e.g. for template variables
         const result = _(queryResults)
-          .map(result => transformer.toTable(result))
+          .map(result => transformer.toTable(result, false))
           .map(result => result.rows)
           .flatten()
           .flatten()
@@ -175,8 +175,9 @@ export default class SensuDatasource {
             // return time series format
             return transformer.toTimeSeries(queryResult);
           } else {
+            const isVertical = format === 'table-v';
             // return table format
-            return transformer.toTable(queryResult);
+            return transformer.toTable(queryResult, isVertical);
           }
         });
 
@@ -242,7 +243,7 @@ export default class SensuDatasource {
         )
         .value();
 
-      if (format === 'table' && groupResult) {
+      if ((format === 'table' || format === 'table-v') && groupResult) {
         const {groupAlias} = prepTarget.target;
         // we transform the groups into multiple columns in case the table format is used
         return this._mergeTableAggregation(
