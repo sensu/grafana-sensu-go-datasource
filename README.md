@@ -41,7 +41,24 @@ into: /var/lib/grafana/plugins
 Restart grafana after installing plugins . <service grafana-server restart>
 ```
 
-2. Restart `grafana-server` to enable the data source plugin.
+2.  **For Grafana Version >= 8 only!**
+    <br /> 
+    a) If you use the standalone binaries of Grafana add the plugin to the list of usigned plugins in the configuration file of Grafana:
+     &nbsp;
+     
+     ```
+     allow_loading_unsigned_plugins = sensu-sensugo-datasource
+     ```
+     
+    <br /> 
+    b) If you use the Docker Image add the following environment variable to the start command:
+     &nbsp;
+     
+     ```
+     GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=sensu-sensugo-datasource
+     ```
+
+3. Restart `grafana-server` to enable the data source plugin.
 
 ### 3. Configure
 
