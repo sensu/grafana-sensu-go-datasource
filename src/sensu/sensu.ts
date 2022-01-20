@@ -4,7 +4,6 @@ import {
   QueryOptions,
   ServerSideFilter,
   ServerSideFilterType,
-  RegexReplaceTouple,
 } from '../types';
 
 /**
@@ -32,17 +31,7 @@ export default class Sensu {
   /**
    * Regex pattern for recognizing multi-values from Grafana template variables such as (ABC|DEF|GHI).
    */
-  static readonly grafanaMultiValueRegex = new RegExp('[(].*[|].*[)]');
-
-  /**
-   * The list of literals and their respective replacements to parse a Grafana multi-value variable to the sensu standard for set-based operators.
-   * Set-based operators are specified in https://docs.sensu.io/sensu-go/latest/api/#set-based-operators.
-   */
-  static readonly grafanaMultiValueReplaceTouples: RegexReplaceTouple[] = [
-    {pattern: /[|]/g, replacement: ','},
-    {pattern: /[)]/g, replacement: ']'},
-    {pattern: /[(]/g, replacement: '['},
-  ];
+  static readonly grafanaMultiValueRegex = new RegExp(/^\s*[(].*[|].*[)]\s*$/g);
 
   /**
    * Executes a query against the given datasource. An access token will be gathered if needed.
@@ -307,24 +296,20 @@ export default class Sensu {
 
   /**
    * Checks if the parameter value is a Grafana multi-value variable as specified in grafanaMultiValueRegex.
-   * If this is the case, the transformation defined in grafanaMultiValueReplaceTouples is applied. Otherwise
-   * the parameter is returned unchanged.
+   * If this is the case, the value is parsed to the sensu standard for set-based operators - i.E. (ABC|DEF|GHI)
+   * would be parsed into [ABC,DEF,GHI].
+   * Set-based operators are specified in https://docs.sensu.io/sensu-go/latest/api/#set-based-operators.
    *
    * @param expression the expression to be parsed.
    * @returns a multi-value expression that complies to the touples specified in https://docs.sensu.io/sensu-go/latest/api/#set-based-operators.
    */
-  static _parseGrafanaMultiValue(expression: string) {
-    if (this.grafanaMultiValueRegex.test(expression)) {
-      let parsedExpression = expression;
-      this.grafanaMultiValueReplaceTouples.forEach(element => {
-        parsedExpression = _.replace(
-          parsedExpression,
-          element.pattern,
-          element.replacement
-        );
-      });
-      return parsedExpression;
+  static _parseGrafanaMultiValue(filterValue: string) {
+    if (this.grafanaMultiValueRegex.test(filterValue)) {
+      filterValue = filterValue
+        .replace(/\(/g, '[')
+        .replace(/\)/g, ']')
+        .replace(/\|/g, ',');
     }
-    return expression;
+    return filterValue;
   }
 }

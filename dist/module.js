@@ -169,27 +169,18 @@ define(['lodash', 'moment', 'app/core/app_events', 'app/plugins/sdk'], function(
               .join(' && ');
           }),
           (i._parseGrafanaMultiValue = function(e) {
-            if (this.grafanaMultiValueRegex.test(e)) {
-              var t = e;
-              return (
-                this.grafanaMultiValueReplaceTouples.forEach(function(e) {
-                  t = a.a.replace(t, e.pattern, e.replacement);
-                }),
-                t
-              );
-            }
-            return e;
+            return this.grafanaMultiValueRegex.test(e)
+              ? e
+                  .replace(/\(/g, '[')
+                  .replace(/\)/g, ']')
+                  .replace(/\|/g, ',')
+              : e;
           }),
           (i.tokenTimeout_s = 600),
           (i.tokenExpireOffset_s = 60),
           (i.apiBaseUrl = '/api/core/v2'),
           (i.apiKeyUrlPrefix = '/api_key_auth'),
-          (i.grafanaMultiValueRegex = new RegExp('[(].*[|].*[)]')),
-          (i.grafanaMultiValueReplaceTouples = [
-            {pattern: /[|]/g, replacement: ','},
-            {pattern: /[)]/g, replacement: ']'},
-            {pattern: /[(]/g, replacement: '['},
-          ]),
+          (i.grafanaMultiValueRegex = new RegExp('^s*[(].*[|].*[)]s*$')),
           i),
           s = [
             {value: 'count', text: 'Count', requiresTarget: !1},
