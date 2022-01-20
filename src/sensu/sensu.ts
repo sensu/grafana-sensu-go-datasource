@@ -29,6 +29,11 @@ export default class Sensu {
   static readonly apiKeyUrlPrefix = '/api_key_auth';
 
   /**
+   * Regex pattern for recognizing multi-values from Grafana template variables such as (ABC|DEF|GHI).
+   */
+  static readonly grafanaMultiValueRegex = new RegExp(/^\s*[(].*[|].*[)]\s*$/g);
+
+  /**
    * Executes a query against the given datasource. An access token will be gathered if needed.
    * For each namespace specified in the passed options, a separate query will be executed.
    *
@@ -278,7 +283,33 @@ export default class Sensu {
    */
   static _buildFilterParameter(filters: ServerSideFilter[]) {
     return _(filters)
-      .map(filter => filter.key + ' ' + filter.matcher + ' ' + filter.value)
+      .map(
+        filter =>
+          filter.key +
+          ' ' +
+          filter.matcher +
+          ' ' +
+          this._parseGrafanaMultiValue(filter.value)
+      )
       .join(' && ');
+  }
+
+  /**
+   * Checks if the parameter value is a Grafana multi-value variable as specified in grafanaMultiValueRegex.
+   * If this is the case, the value is parsed to the sensu standard for set-based operators - i.E. (ABC|DEF|GHI)
+   * would be parsed into [ABC,DEF,GHI].
+   * Set-based operators are specified in https://docs.sensu.io/sensu-go/latest/api/#set-based-operators.
+   *
+   * @param expression the expression to be parsed.
+   * @returns a multi-value expression that complies to the touples specified in https://docs.sensu.io/sensu-go/latest/api/#set-based-operators.
+   */
+  static _parseGrafanaMultiValue(filterValue: string) {
+    if (this.grafanaMultiValueRegex.test(filterValue)) {
+      filterValue = filterValue
+        .replace(/\(/g, '[')
+        .replace(/\)/g, ']')
+        .replace(/\|/g, ',');
+    }
+    return filterValue;
   }
 }
