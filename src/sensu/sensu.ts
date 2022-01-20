@@ -4,6 +4,7 @@ import {
   QueryOptions,
   ServerSideFilter,
   ServerSideFilterType,
+  RegexReplaceTouple,
 } from '../types';
 
 /**
@@ -27,6 +28,21 @@ export default class Sensu {
    * The data source route used for API key authentication. See also the plugin.json file.
    */
   static readonly apiKeyUrlPrefix = '/api_key_auth';
+
+  /**
+   * Regex pattern for recognizing multi-values from Grafana template variables such as (ABC|DEF|GHI).
+   */
+  static readonly grafanaMultiValueRegex = new RegExp('[(].*[|].*[)]');
+
+  /**
+   * The list of literals and their respective replacements to parse a Grafana multi-value variable to the sensu standard for set-based operators.
+   * Set-based operators are specified in https://docs.sensu.io/sensu-go/latest/api/#set-based-operators.
+   */
+  static readonly grafanaMultiValueReplaceTouples: RegexReplaceTouple[] = [
+    {pattern: /[|]/g, replacement: ','},
+    {pattern: /[)]/g, replacement: ']'},
+    {pattern: /[(]/g, replacement: '['},
+  ];
 
   /**
    * Executes a query against the given datasource. An access token will be gathered if needed.
@@ -278,7 +294,37 @@ export default class Sensu {
    */
   static _buildFilterParameter(filters: ServerSideFilter[]) {
     return _(filters)
-      .map(filter => filter.key + ' ' + filter.matcher + ' ' + filter.value)
+      .map(
+        filter =>
+          filter.key +
+          ' ' +
+          filter.matcher +
+          ' ' +
+          this._parseGrafanaMultiValue(filter.value)
+      )
       .join(' && ');
+  }
+
+  /**
+   * Checks if the parameter value is a Grafana multi-value variable as specified in grafanaMultiValueRegex.
+   * If this is the case, the transformation defined in grafanaMultiValueReplaceTouples is applied. Otherwise
+   * the parameter is returned unchanged.
+   *
+   * @param expression the expression to be parsed.
+   * @returns a multi-value expression that complies to the touples specified in https://docs.sensu.io/sensu-go/latest/api/#set-based-operators.
+   */
+  static _parseGrafanaMultiValue(expression: string) {
+    if (this.grafanaMultiValueRegex.test(expression)) {
+      let parsedExpression = expression;
+      this.grafanaMultiValueReplaceTouples.forEach(element => {
+        parsedExpression = _.replace(
+          parsedExpression,
+          element.pattern,
+          element.replacement
+        );
+      });
+      return parsedExpression;
+    }
+    return expression;
   }
 }

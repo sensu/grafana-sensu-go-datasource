@@ -152,3 +152,8 @@ export interface GrafanaTable {
   rows: unknown[][];
   type: string;
 }
+
+export interface RegexReplaceTouple {
+  pattern: RegExp;
+  replacement: string;
+}

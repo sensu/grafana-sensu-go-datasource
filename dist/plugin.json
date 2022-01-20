@@ -17,7 +17,7 @@
       "large": "img/sensu_logo.png"
     },
     "version": "1.1.0",
-    "updated": "2020-08-31",
+    "updated": "2022-01-20",
     "screenshots": [
       {"name": "Query Editor screenshot", "path": "img/ds-query-editor.png"}
     ]
