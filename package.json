@@ -38,7 +38,7 @@
     "husky": "^1.0.0-rc.13",
     "jest": "^26.4.2",
     "lint-staged": "^10.2.13",
-    "moment": "^2.27.0",
+    "moment": "^2.29.2",
     "ng-annotate-webpack-plugin": "^0.3.0",
     "npm-check": "^5.9.2",
     "prettier": "1.10.2",
