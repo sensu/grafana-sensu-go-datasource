@@ -20,9 +20,9 @@ Grab the URL for [the latest release zip file][2].
 1. Use [`grafana-cli`][3] to install the plugin by providing the plugin zip URL as the value of the `--pluginUrl` flag:
 
 ```
-$ sudo grafana-cli --pluginUrl https://github.com/sensu/grafana-sensu-go-datasource/releases/download/1.0.1/sensu-sensugo-datasource-1.2.1.zip plugins install sensu-sensugo-datasource
+$ sudo grafana-cli --pluginUrl https://github.com/sensu/grafana-sensu-go-datasource/releases/download/1.2.1/sensu-sensugo-datasource-1.2.1.zip plugins install sensu-sensugo-datasource
 installing sensu-sensugo-datasource @
-from url: https://github.com/sensu/grafana-sensu-go-datasource/releases/download/1.0.1/sensu-sensugo-datasource-1.2.1.zip
+from url: https://github.com/sensu/grafana-sensu-go-datasource/releases/download/1.2.1/sensu-sensugo-datasource-1.2.1.zip
 into: /var/lib/grafana/plugins
 
 ✔ Installed sensu-sensugo-datasource successfully
