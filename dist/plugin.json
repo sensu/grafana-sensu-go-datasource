@@ -8,6 +8,14 @@
   "skipDataQuery": false,
   "info": {
     "description": "Sensu Go Data Source for Grafana",
+    "keywords": [
+      "sensu",
+      "sensu-go",
+      "sensugo",
+      "observability",
+      "monitoring",
+      "pipeline"
+    ],
     "author": {
       "name": "Novatec Consulting GmbH",
       "url": "https://www.novatec-gmbh.de"
