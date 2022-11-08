@@ -12,6 +12,14 @@
       "name": "Novatec Consulting GmbH",
       "url": "https://www.novatec-gmbh.de"
     },
+    "keywords": [
+      "sensu",
+      "sensu-go",
+      "sensugo",
+      "observability",
+      "monitoring",
+      "pipeline"
+    ],
     "logos": {
       "small": "img/sensu_logo.png",
       "large": "img/sensu_logo.png"

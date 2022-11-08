@@ -8,6 +8,10 @@
   "skipDataQuery": false,
   "info": {
     "description": "Sensu Go Data Source for Grafana",
+    "author": {
+      "name": "Novatec Consulting GmbH",
+      "url": "https://www.novatec-gmbh.de"
+    },
     "keywords": [
       "sensu",
       "sensu-go",
@@ -16,16 +20,12 @@
       "monitoring",
       "pipeline"
     ],
-    "author": {
-      "name": "Novatec Consulting GmbH",
-      "url": "https://www.novatec-gmbh.de"
-    },
     "logos": {
       "small": "img/sensu_logo.png",
       "large": "img/sensu_logo.png"
     },
-    "version": "1.2.0",
-    "updated": "2022-11-03",
+    "version": "1.2.1",
+    "updated": "2022-11-08",
     "screenshots": [
       {"name": "Query Editor screenshot", "path": "img/ds-query-editor.png"}
     ]
