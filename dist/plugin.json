@@ -24,7 +24,7 @@
       "small": "img/sensu_logo.png",
       "large": "img/sensu_logo.png"
     },
-    "version": "1.2.1",
+    "version": "1.2.0",
     "updated": "2022-11-08",
     "screenshots": [
       {"name": "Query Editor screenshot", "path": "img/ds-query-editor.png"}
