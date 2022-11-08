@@ -1,21 +1,10 @@
-<p>
-  <a href="https://www.sensu.io/">
-    <img alt="Sensu hearts Grafana"
-      src="https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/sensu-heart-grafana.png"
-      width="300"
-    />
-  </a>
-</p>
+[![Sensu hearts Grafana](https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/sensu-heart-grafana-300x.png)](https://sensu.io)
 
 ## Sensu Go Data Source for Grafana
 
 [Setup](#setup) | [Using the Sensu Go Data Source](#using-the-sensu-go-data-source) | [Contributing](#contributing) | [Code of conduct](https://sensu.io/conduct)
 
-<p>
-  <a href="https://github.com/sensu/grafana-sensu-go-datasource/blob/master/LICENSE">
-    <img src="https://img.shields.io/github/license/sensu/web.svg?style=flat" />
-  </a>
-</p>
+[![License](https://img.shields.io/github/license/sensu/web.svg?style=flat)](https://github.com/sensu/grafana-sensu-go-datasource/blob/master/LICENSE)
 
 Sensu Go Data Source is a [Grafana plugin][1] that allows Grafana to connect to the Sensu API.
 You can use the Sensu Go Data Source to customize your monitoring dashboards with information about Sensu entities and events.
@@ -31,9 +20,9 @@ Grab the URL for [the latest release zip file][2].
 1. Use [`grafana-cli`][3] to install the plugin by providing the plugin zip URL as the value of the `--pluginUrl` flag:
 
 ```
-$ sudo grafana-cli --pluginUrl https://github.com/sensu/grafana-sensu-go-datasource/releases/download/1.0.1/sensu-sensugo-datasource-1.0.1.zip plugins install sensu-sensugo-datasource
+$ sudo grafana-cli --pluginUrl https://github.com/sensu/grafana-sensu-go-datasource/releases/download/1.0.1/sensu-sensugo-datasource-1.2.1.zip plugins install sensu-sensugo-datasource
 installing sensu-sensugo-datasource @
-from url: https://github.com/sensu/grafana-sensu-go-datasource/releases/download/1.0.1/sensu-sensugo-datasource-1.0.1.zip
+from url: https://github.com/sensu/grafana-sensu-go-datasource/releases/download/1.0.1/sensu-sensugo-datasource-1.2.1.zip
 into: /var/lib/grafana/plugins
 
 ✔ Installed sensu-sensugo-datasource successfully
@@ -41,7 +30,24 @@ into: /var/lib/grafana/plugins
 Restart grafana after installing plugins . <service grafana-server restart>
 ```
 
-2. Restart `grafana-server` to enable the data source plugin.
+2. **For Grafana Version >= 8 only!**
+    <br /> 
+    a) If you use the standalone binaries of Grafana add the plugin to the list of usigned plugins in the configuration file of Grafana:
+     &nbsp;
+     
+     ```
+     allow_loading_unsigned_plugins = sensu-sensugo-datasource
+     ```
+     
+    <br /> 
+    b) If you use the Docker Image add the following environment variable to the start command:
+     &nbsp;
+     
+     ```
+     GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=sensu-sensugo-datasource
+     ```
+
+3. Restart `grafana-server` to enable the data source plugin.
 
 ### 3. Configure
 
@@ -56,20 +62,15 @@ To configure the Sensu Go Data Source:
    * **Basic Auth**
      * **Check the option for Basic Auth**.
      * **Add a Sensu username and password** with get and list permissions for entities, events, and namespaces (default admin user: username `admin`, password `P@ssw0rd!`). For more information about creating a Sensu cluster role, see the [Sensu docs][5].
-     <img alt="Grafana user interface showing the configuration settings for the Sensu Go Data Source"
-  src="https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/configure-data-source.png"
-  width="750"
-/>
+       ![Grafana user interface showing the configuration settings for the Sensu Go Data Source](https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/configure-data-source.png)
+
    * **API Key Auth**
      * **Enable the option for the usage of an API key**.
      * **Enter the API key which you want to use**. See the Sensu Go documentation for information on [how to create an API key][api_key_doc].
        ![API key configuration in the Sensu So Data Source](https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/configure-api-key.png)
 
 3. Select Save & Test. You should see a banner confirming that Grafana is connected to Sensu Go.
-   <img alt="Confirmation banner with the message: Successfully connected against the Sensu Go API"
-  src="https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/configure-success.png"
-  width="750"
-/>
+   ![Confirmation banner with the message: Successfully connected against the Sensu Go API](https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/configure-success.png)
 
 ## Using the Sensu Go Data Source
 
@@ -77,10 +78,7 @@ To build a query, select the Sensu Go data source and the Entity, Events, or Nam
 See the Sensu docs to learn about available attributes for [entities][6], [events][7], and [namespaces][8].
 To learn more about building dashboards, see the [Grafana docs][9].
 
-<img alt="Grafana user interface showing the query builder with Sensu Go and the Entity API selected"
-  src="https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/build-query.png"
-  width="750"
-/>
+![Grafana user interface showing the query builder with Sensu Go and the Entity API selected](https://raw.githubusercontent.com/sensu/grafana-sensu-go-datasource/master/images/build-query.png)
 
 ### Raw Queries
 
